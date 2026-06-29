@@ -211,7 +211,22 @@
                         <input type="checkbox" value="0" class="fit-day-checkbox" style="margin-right: 5px;"> Paz
                     </label>
                 </div>
-                <button id="generateWorkoutBtn" style="width: 100%; padding: 12px; border-radius: 20px; background: var(--accent-blue); color: white; border: none; font-weight: bold; cursor: pointer;">Programımı Hazırla</button>
+                <button id="generateWorkoutBtn" style="width: 100%; padding: 12px; border-radius: 20px; background: var(--accent-blue); color: white; border: none; font-weight: bold; cursor: pointer; margin-bottom: 20px;">AI ile Programımı Hazırla</button>
+                
+                <h4 style="margin-bottom: 10px; font-size: 0.95rem; color: var(--accent-orange); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;"><i class="fa-solid fa-pen-to-square"></i> Veya Kendin Oluştur</h4>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <select id="manualFitDaySelect1" style="border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.05); color: white;">
+                        <option value="1">Pzt</option>
+                        <option value="2">Sal</option>
+                        <option value="3">Çar</option>
+                        <option value="4">Per</option>
+                        <option value="5">Cum</option>
+                        <option value="6">Cmt</option>
+                        <option value="0">Paz</option>
+                    </select>
+                    <input type="text" id="manualFitInput1" placeholder="Örn: Squat 4x10" style="flex: 1; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.05); color: white; outline: none;">
+                </div>
+                <button id="manualFitAddBtn1" style="width: 100%; padding: 12px; border-radius: 20px; background: rgba(255,255,255,0.1); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Programa Ekle</button>
             </div>
 
             <div id="fitnessRoutineCard" class="card" style="display: none; margin-bottom: 20px;">
@@ -224,8 +239,25 @@
                     <!-- Egzersizler buraya gelecek -->
                 </ul>
                 
+                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-bottom: 15px;">
+                    <h4 style="margin-bottom: 10px; font-size: 0.9rem; color: var(--accent-orange);"><i class="fa-solid fa-pen-to-square"></i> Haftalık Programa Egzersiz Ekle</h4>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="manualFitDaySelect2" style="border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.05); color: white;">
+                            <option value="1">Pzt</option>
+                            <option value="2">Sal</option>
+                            <option value="3">Çar</option>
+                            <option value="4">Per</option>
+                            <option value="5">Cum</option>
+                            <option value="6">Cmt</option>
+                            <option value="0">Paz</option>
+                        </select>
+                        <input type="text" id="manualFitInput2" placeholder="Örn: Deadlift 3x5" style="flex: 1; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.05); color: white; outline: none;">
+                        <button id="manualFitAddBtn2" style="background: rgba(255,255,255,0.1); color: white; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer;"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                </div>
+
                 <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-                    <h4 style="margin-bottom: 10px; font-size: 0.9rem; color: var(--text-secondary);">Ekstra Yaptığın Bir Şey Var Mı?</h4>
+                    <h4 style="margin-bottom: 10px; font-size: 0.9rem; color: var(--text-secondary);">Sadece Bugün İçin Ekstra Bir Şey Yaptın Mı?</h4>
                     <div class="ai-input-wrapper">
                         <input type="text" id="fitnessAiInput" placeholder="Örn: 45 dk bisiklet sürdüm">
                         <button id="fitnessAiBtn"><i class="fa-solid fa-plus"></i></button>

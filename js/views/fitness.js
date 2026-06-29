@@ -16,6 +16,15 @@ export function initFitness() {
     const fitnessAiBtn = document.getElementById('fitnessAiBtn');
     const burnedCaloriesTotalUI = document.getElementById('burnedCaloriesTotalUI');
 
+    // Manual Entry Elements
+    const manualFitDaySelect1 = document.getElementById('manualFitDaySelect1');
+    const manualFitInput1 = document.getElementById('manualFitInput1');
+    const manualFitAddBtn1 = document.getElementById('manualFitAddBtn1');
+    
+    const manualFitDaySelect2 = document.getElementById('manualFitDaySelect2');
+    const manualFitInput2 = document.getElementById('manualFitInput2');
+    const manualFitAddBtn2 = document.getElementById('manualFitAddBtn2');
+
     const dayNames = { "1": "Pazartesi", "2": "Salı", "3": "Çarşamba", "4": "Perşembe", "5": "Cuma", "6": "Cumartesi", "0": "Pazar" };
 
     function recalcCalories() {
@@ -267,6 +276,54 @@ export function initFitness() {
             }
             
             fitnessAiBtn.innerHTML = originalIcon;
+        });
+    }
+
+    // 4. Manuel Program Ekleme Logic
+    function handleManualAdd(daySelect, inputElement) {
+        const selectedDay = daySelect.value;
+        const exerciseText = inputElement.value.trim();
+        
+        if (!exerciseText) {
+            alert("Lütfen bir egzersiz yazın.");
+            return;
+        }
+
+        if (!appState.fitnessProgram) {
+            appState.fitnessProgram = {};
+        }
+
+        let dayList = appState.fitnessProgram[selectedDay] || appState.fitnessProgram[dayNames[selectedDay]];
+        if (!dayList) {
+            appState.fitnessProgram[selectedDay] = [];
+            dayList = appState.fitnessProgram[selectedDay];
+        }
+
+        dayList.push({
+            name: exerciseText,
+            done: false
+        });
+
+        saveState();
+        inputElement.value = '';
+        renderRoutine();
+    }
+
+    if (manualFitAddBtn1) {
+        manualFitAddBtn1.addEventListener('click', () => {
+            handleManualAdd(manualFitDaySelect1, manualFitInput1);
+        });
+        manualFitInput1.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleManualAdd(manualFitDaySelect1, manualFitInput1);
+        });
+    }
+
+    if (manualFitAddBtn2) {
+        manualFitAddBtn2.addEventListener('click', () => {
+            handleManualAdd(manualFitDaySelect2, manualFitInput2);
+        });
+        manualFitInput2.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleManualAdd(manualFitDaySelect2, manualFitInput2);
         });
     }
 
