@@ -50,7 +50,7 @@ export async function callGeminiAPI(promptText, apiKey, customSystemInstruction 
             parts: [{ text: `${finalInstruction}\n\nKullanıcı metni: ${promptText}` }]
         }],
         generationConfig: {
-            temperature: 0.1,
+            temperature: 0.0,
         }
     };
 
