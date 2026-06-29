@@ -210,7 +210,7 @@ export function initFitness() {
             fitnessAiBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
             
             try {
-                const instruction = `Kullanıcının kilosu: ${appState.weight} kg, Cinsiyeti: ${appState.gender}, Yaşı: ${appState.age}. SADECE bu sporun tahmini kaç kalori yaktığını JSON olarak dön: {"burned": 350}. Başka hiçbir kelime kullanma.`;
+                const instruction = `Kullanıcının kilosu: ${appState.weight} kg, Cinsiyeti: ${appState.gender}, Yaşı: ${appState.age}. Girdiği spor aktivitesinin/egzersizin tahmini kaç kalori yaktığını GERÇEKÇİ bir şekilde hesapla. SADECE JSON formatında dön. Örnek: {"burned": 45}. Başka hiçbir kelime kullanma.`;
                 const apiKey = localStorage.getItem('geminiApiKey');
                 
                 if (!apiKey) {
