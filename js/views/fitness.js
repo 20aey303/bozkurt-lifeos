@@ -122,11 +122,26 @@ export function initFitness() {
                     btn.addEventListener('click', (e) => {
                         const idx = e.currentTarget.getAttribute('data-index');
                         if (confirm("Bu egzersizi silmek istediğine emin misin?")) {
+                            let deletedItem = null;
                             if(appState.fitnessProgram[todayDay]) {
-                                appState.fitnessProgram[todayDay].splice(idx, 1);
+                                deletedItem = appState.fitnessProgram[todayDay].splice(idx, 1)[0];
                             } else if(appState.fitnessProgram[dayNames[todayDay]]) {
-                                appState.fitnessProgram[dayNames[todayDay]].splice(idx, 1);
+                                deletedItem = appState.fitnessProgram[dayNames[todayDay]].splice(idx, 1)[0];
                             }
+
+                            // Eğer bu bir 'Ekstra' hareketiyse ve takvime işlendiyse takvimden de sil
+                            if (deletedItem && deletedItem.name.startsWith("Ekstra:")) {
+                                const dateKey = new Date().toLocaleDateString('tr-TR');
+                                if (appState.calendar && appState.calendar[dateKey]) {
+                                    // "Ekstra: Hareket Adı (100 kcal)" formatından "Hareket Adı" kısmını çıkar
+                                    const baseName = deletedItem.name.replace("Ekstra: ", "").replace(/\s*\(\d+\s*kcal\)$/i, "").trim();
+                                    
+                                    appState.calendar[dateKey] = appState.calendar[dateKey].filter(calItem => {
+                                        return !(calItem.text.includes("💪 Spor:") && calItem.text.includes(baseName));
+                                    });
+                                }
+                            }
+
                             recalcCalories();
                             renderRoutine();
                         }
