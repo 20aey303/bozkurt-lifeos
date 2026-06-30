@@ -1,6 +1,7 @@
 import { appState, saveState } from '../state.js';
 import { updateUI } from '../ui.js';
 import { callGeminiAPI } from '../api.js';
+import { showToast } from '../notifications.js';
 
 export function initFitness() {
     const fitnessSetupCard = document.getElementById('fitnessSetupCard');
@@ -25,12 +26,62 @@ export function initFitness() {
     const manualFitInput2 = document.getElementById('manualFitInput2');
     const manualFitAddBtn2 = document.getElementById('manualFitAddBtn2');
 
+    // Timer Elements
+    const timerDisplay = document.getElementById('timerDisplay');
+    const timerStartBtn = document.getElementById('timerStartBtn');
+    const timerStopBtn = document.getElementById('timerStopBtn');
+
+    // Completion Elements
+    const workoutCompletionText = document.getElementById('workoutCompletionText');
+    const workoutCompletionBar = document.getElementById('workoutCompletionBar');
+
     const dayNames = { "1": "Pazartesi", "2": "Salı", "3": "Çarşamba", "4": "Perşembe", "5": "Cuma", "6": "Cumartesi", "0": "Pazar" };
+    const dayNamesShort = { "1": "Pzt", "2": "Sal", "3": "Çar", "4": "Per", "5": "Cum", "6": "Cmt", "0": "Paz" };
+
+    // ═══ Timer Logic ═══
+    let timerInterval = null;
+    let timerSeconds = 0;
+    let timerRunning = false;
+
+    function updateTimerDisplay() {
+        if (!timerDisplay) return;
+        const mins = Math.floor(timerSeconds / 60);
+        const secs = timerSeconds % 60;
+        timerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    if (timerStartBtn) {
+        timerStartBtn.addEventListener('click', () => {
+            if (timerRunning) return;
+            timerRunning = true;
+            timerStartBtn.style.opacity = '0.5';
+            timerInterval = setInterval(() => {
+                timerSeconds++;
+                updateTimerDisplay();
+            }, 1000);
+            showToast('⏱️ Antrenman Başladı', 'Süre sayılıyor...', 'info', 2000);
+        });
+    }
+
+    if (timerStopBtn) {
+        timerStopBtn.addEventListener('click', () => {
+            if (!timerRunning) return;
+            clearInterval(timerInterval);
+            timerRunning = false;
+            if (timerStartBtn) timerStartBtn.style.opacity = '1';
+            const mins = Math.floor(timerSeconds / 60);
+            showToast('⏱️ Antrenman Bitti', `Toplam süre: ${mins} dakika`, 'success', 4000);
+            timerSeconds = 0;
+            updateTimerDisplay();
+        });
+    }
+
+    // ═══ Helper Functions ═══
 
     function getTodayDayStr() {
         if (appState.lastAccessDate) {
             const parts = appState.lastAccessDate.split('.');
-            if(parts.length === 3) {
+            if (parts.length === 3) {
                 const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
                 return d.getDay().toString();
             }
@@ -59,11 +110,163 @@ export function initFitness() {
         }
         appState.burnedCalories = total;
         saveState();
-        updateUI(); // Dashboard update
+        updateUI();
         
-        if(burnedCaloriesTotalUI) {
+        if (burnedCaloriesTotalUI) {
             burnedCaloriesTotalUI.textContent = appState.burnedCalories;
         }
+    }
+
+    function updateCompletionBar() {
+        const todayDay = getTodayDayStr();
+        const todayProgram = appState.fitnessProgram && (appState.fitnessProgram[todayDay] || appState.fitnessProgram[dayNames[todayDay]]);
+        
+        if (!todayProgram || todayProgram.length === 0) {
+            if (workoutCompletionText) workoutCompletionText.textContent = '—';
+            if (workoutCompletionBar) workoutCompletionBar.style.width = '0%';
+            return;
+        }
+
+        const total = todayProgram.length;
+        const done = todayProgram.filter(t => t.done).length;
+        const percent = Math.round((done / total) * 100);
+
+        if (workoutCompletionText) workoutCompletionText.textContent = `${percent}%`;
+        if (workoutCompletionBar) workoutCompletionBar.style.width = `${percent}%`;
+
+        // All done notification
+        if (percent === 100 && total > 0) {
+            const key = `workout_done_${appState.lastAccessDate}`;
+            if (!sessionStorage.getItem(key)) {
+                sessionStorage.setItem(key, '1');
+                showToast('💪 Antrenman Tamamlandı!', 'Bugünkü tüm egzersizlerini bitirdin!', 'success', 5000);
+            }
+        }
+    }
+
+    // ═══ Weekly Tabs ═══
+
+    function renderWeeklyTabs() {
+        const tabsContainer = document.getElementById('weeklyTabs');
+        if (!tabsContainer || !appState.fitnessProgram) return;
+
+        tabsContainer.innerHTML = '';
+        const todayDay = getTodayDayStr();
+        const allDays = ["1", "2", "3", "4", "5", "6", "0"];
+
+        allDays.forEach(dayKey => {
+            const hasProgram = appState.fitnessProgram[dayKey] || appState.fitnessProgram[dayNames[dayKey]];
+            if (!hasProgram) return;
+
+            const tab = document.createElement('button');
+            tab.className = `weekly-tab${dayKey === todayDay ? ' active' : ''}`;
+            
+            const program = hasProgram;
+            const done = program.filter(t => t.done).length;
+            const total = program.length;
+            
+            tab.innerHTML = `${dayNamesShort[dayKey]} <span class="text-xs text-muted">${done}/${total}</span>`;
+            
+            tab.addEventListener('click', () => {
+                tabsContainer.querySelectorAll('.weekly-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                renderDayWorkout(dayKey);
+            });
+
+            tabsContainer.appendChild(tab);
+        });
+    }
+
+    function renderDayWorkout(dayKey) {
+        if (!fitWorkoutList || !appState.fitnessProgram) return;
+
+        const program = appState.fitnessProgram[dayKey] || appState.fitnessProgram[dayNames[dayKey]];
+        const todayDay = getTodayDayStr();
+        const isToday = dayKey === todayDay;
+
+        if (fitTodayTitle) {
+            if (!program) {
+                fitTodayTitle.textContent = `${dayNamesShort[dayKey]}: Dinlenme Günü 🛋️`;
+                fitTodayTitle.style.color = 'var(--text-secondary)';
+            } else {
+                fitTodayTitle.textContent = `${isToday ? 'Bugün' : dayNamesShort[dayKey]}: Antrenman Günü 🔥`;
+                fitTodayTitle.style.color = 'var(--accent-orange)';
+            }
+        }
+
+        if (!program) {
+            fitWorkoutList.innerHTML = '<p class="text-center text-sm text-muted">Kasların bugün dinleniyor. Sadece aktif kalmaya çalış (yürüyüş vs.).</p>';
+            return;
+        }
+
+        fitWorkoutList.innerHTML = '';
+        program.forEach((task, index) => {
+            const li = document.createElement('li');
+            li.className = 'workout-item';
+            
+            li.innerHTML = `
+                <label class="checkbox-container" style="flex: 1; margin-bottom: 0;">
+                    <input type="checkbox" class="fit-checkbox" data-day="${dayKey}" data-index="${index}" ${task.done ? 'checked' : ''} ${!isToday ? 'disabled' : ''}>
+                    <span class="checkmark"></span>
+                    <span class="todo-text" style="${task.done ? 'text-decoration: line-through; opacity: 0.5;' : ''}">${task.name}</span>
+                </label>
+                <button class="btn-icon danger fit-delete-btn" data-day="${dayKey}" data-index="${index}"><i class="fa-solid fa-trash"></i></button>
+            `;
+            fitWorkoutList.appendChild(li);
+        });
+
+        // Bind checkbox events
+        fitWorkoutList.querySelectorAll('.fit-checkbox').forEach(box => {
+            box.addEventListener('change', (e) => {
+                const day = e.target.getAttribute('data-day');
+                const idx = e.target.getAttribute('data-index');
+                const isChecked = e.target.checked;
+                
+                if (appState.fitnessProgram[day]) {
+                    appState.fitnessProgram[day][idx].done = isChecked;
+                } else if (appState.fitnessProgram[dayNames[day]]) {
+                    appState.fitnessProgram[dayNames[day]][idx].done = isChecked;
+                }
+
+                recalcCalories();
+                updateCompletionBar();
+                renderWeeklyTabs();
+                renderDayWorkout(day);
+            });
+        });
+
+        // Bind delete events
+        fitWorkoutList.querySelectorAll('.fit-delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const day = e.currentTarget.getAttribute('data-day');
+                const idx = e.currentTarget.getAttribute('data-index');
+                if (confirm("Bu egzersizi silmek istediğine emin misin?")) {
+                    let deletedItem = null;
+                    if (appState.fitnessProgram[day]) {
+                        deletedItem = appState.fitnessProgram[day].splice(idx, 1)[0];
+                    } else if (appState.fitnessProgram[dayNames[day]]) {
+                        deletedItem = appState.fitnessProgram[dayNames[day]].splice(idx, 1)[0];
+                    }
+
+                    // Takvimden de sil
+                    if (deletedItem && deletedItem.name.startsWith("Ekstra:")) {
+                        const dateKey = appState.lastAccessDate || new Date().toLocaleDateString('tr-TR');
+                        if (appState.calendar && appState.calendar[dateKey]) {
+                            const baseName = deletedItem.name.replace("Ekstra: ", "").replace(/\s*\(\d+\s*kcal\)$/i, "").trim();
+                            appState.calendar[dateKey] = appState.calendar[dateKey].filter(calItem => {
+                                return !(calItem.text.includes("💪 Spor:") && calItem.text.includes(baseName));
+                            });
+                        }
+                    }
+
+                    recalcCalories();
+                    updateCompletionBar();
+                    renderWeeklyTabs();
+                    renderDayWorkout(day);
+                    showToast('🗑️ Silindi', 'Egzersiz programdan kaldırıldı.', 'info', 2000);
+                }
+            });
+        });
     }
 
     function renderRoutine() {
@@ -76,94 +279,12 @@ export function initFitness() {
         if (fitnessSetupCard) fitnessSetupCard.style.display = 'none';
         if (fitnessRoutineCard) fitnessRoutineCard.style.display = 'block';
 
-        const todayDay = getTodayDayStr();
-        const todayProgram = appState.fitnessProgram[todayDay] || appState.fitnessProgram[dayNames[todayDay]];
-
-        if (!todayProgram) {
-            if (fitTodayTitle) {
-                fitTodayTitle.textContent = 'Bugün: Dinlenme Günü 🛋️';
-                fitTodayTitle.style.color = 'var(--text-secondary)';
-            }
-            if (fitWorkoutList) fitWorkoutList.innerHTML = '<p style="text-align:center; font-size: 0.9rem; color: var(--text-secondary);">Kasların bugün dinleniyor. Sadece aktif kalmaya çalış (yürüyüş vs.).</p>';
-        } else {
-            if (fitTodayTitle) {
-                fitTodayTitle.textContent = `Bugün: Antrenman Günü 🔥`;
-                fitTodayTitle.style.color = 'var(--accent-orange)';
-            }
-            
-            if (fitWorkoutList) {
-                fitWorkoutList.innerHTML = '';
-                todayProgram.forEach((task, index) => {
-                    const li = document.createElement('li');
-                    li.style.display = 'flex';
-                    li.style.justifyContent = 'space-between';
-                    li.style.alignItems = 'center';
-                    li.style.marginBottom = '5px';
-                    
-                    li.innerHTML = `
-                        <label class="checkbox-container" style="flex: 1; margin-bottom: 0;">
-                            <input type="checkbox" class="fit-checkbox" data-index="${index}" ${task.done ? 'checked' : ''}>
-                            <span class="checkmark"></span>
-                            <span class="todo-text" style="${task.done ? 'text-decoration: line-through; opacity: 0.5;' : ''}">${task.name}</span>
-                        </label>
-                        <button class="fit-delete-btn" data-index="${index}" style="background: none; border: none; color: var(--accent-red); cursor: pointer; padding: 5px;"><i class="fa-solid fa-trash"></i></button>
-                    `;
-                    fitWorkoutList.appendChild(li);
-                });
-
-                // Bind checkbox events
-                document.querySelectorAll('.fit-checkbox').forEach(box => {
-                    box.addEventListener('change', (e) => {
-                        const idx = e.target.getAttribute('data-index');
-                        const isChecked = e.target.checked;
-                        
-                        if(appState.fitnessProgram[todayDay]) {
-                            appState.fitnessProgram[todayDay][idx].done = isChecked;
-                        } else if(appState.fitnessProgram[dayNames[todayDay]]) {
-                            appState.fitnessProgram[dayNames[todayDay]][idx].done = isChecked;
-                        }
-
-                        recalcCalories();
-                        renderRoutine();
-                    });
-                });
-
-                // Bind delete events
-                document.querySelectorAll('.fit-delete-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const idx = e.currentTarget.getAttribute('data-index');
-                        if (confirm("Bu egzersizi silmek istediğine emin misin?")) {
-                            const todayDay = getTodayDayStr();
-                            let deletedItem = null;
-                            if(appState.fitnessProgram[todayDay]) {
-                                deletedItem = appState.fitnessProgram[todayDay].splice(idx, 1)[0];
-                            } else if(appState.fitnessProgram[dayNames[todayDay]]) {
-                                deletedItem = appState.fitnessProgram[dayNames[todayDay]].splice(idx, 1)[0];
-                            }
-
-                            // Eğer bu bir 'Ekstra' hareketiyse ve takvime işlendiyse takvimden de sil
-                            if (deletedItem && deletedItem.name.startsWith("Ekstra:")) {
-                                const dateKey = appState.lastAccessDate || new Date().toLocaleDateString('tr-TR');
-                                if (appState.calendar && appState.calendar[dateKey]) {
-                                    // "Ekstra: Hareket Adı (100 kcal)" formatından "Hareket Adı" kısmını çıkar
-                                    const baseName = deletedItem.name.replace("Ekstra: ", "").replace(/\s*\(\d+\s*kcal\)$/i, "").trim();
-                                    
-                                    appState.calendar[dateKey] = appState.calendar[dateKey].filter(calItem => {
-                                        return !(calItem.text.includes("💪 Spor:") && calItem.text.includes(baseName));
-                                    });
-                                }
-                            }
-
-                            recalcCalories();
-                            renderRoutine();
-                        }
-                    });
-                });
-            }
-        }
+        renderWeeklyTabs();
+        renderDayWorkout(getTodayDayStr());
+        updateCompletionBar();
     }
 
-    // 1. AI Program Oluşturma (Setup)
+    // ═══ AI Program Generation ═══
     if (generateWorkoutBtn) {
         generateWorkoutBtn.addEventListener('click', async () => {
             const originalIcon = generateWorkoutBtn.innerHTML;
@@ -173,7 +294,7 @@ export function initFitness() {
             const uniqueDays = Array.from(selectedCheckboxes).map(cb => cb.value);
             
             if (uniqueDays.length === 0) {
-                alert("Lütfen spora gideceğiniz günleri seçin.");
+                showToast('⚠️ Gün Seçilmedi', 'Lütfen spora gideceğiniz günleri seçin.', 'warning');
                 generateWorkoutBtn.innerHTML = originalIcon;
                 return;
             }
@@ -184,7 +305,7 @@ export function initFitness() {
                 Hedef: ${appState.goal === 'recomp' ? 'Kas Yapmak' : (appState.goal === 'lose' ? 'Kilo Vermek' : 'Kilo Almak')}.
                 Kullanıcı haftada ${uniqueDays.length} gün spor yapacak: ${dayStr}.
                 Lütfen bu kullanıcıya ${uniqueDays.length} günlük detaylı (hareket, set ve tekrar) bir spor programı yaz ve SADECE JSON objesi olarak dön.
-                Format tam olarak şöyle olmalı (Örnek 2 gün için, anahtarlar günlerin rakam karşılığı olmalıdır. 1=Pzt, 2=Sal, 3=Çar, 4=Per, 5=Cum, 6=Cmt, 0=Paz):
+                Format tam olarak şöyle olmalı (anahtarlar günlerin rakam karşılığı olmalıdır. 1=Pzt, 2=Sal, 3=Çar, 4=Per, 5=Cum, 6=Cmt, 0=Paz):
                 {
                   "${uniqueDays[0]}": [ {"name": "Bench Press 3x10", "done": false}, {"name": "Dumbbell Fly 3x12", "done": false} ],
                   "${uniqueDays[1] || 'X'}": [ {"name": "Squat 3x10", "done": false} ]
@@ -195,51 +316,48 @@ export function initFitness() {
                 const apiKey = localStorage.getItem('geminiApiKey');
                 
                 if (!apiKey) {
-                    alert('Lütfen ayarlardan API anahtarınızı girin.');
+                    showToast('🔑 API Anahtarı Gerekli', 'Lütfen ayarlardan API anahtarınızı girin.', 'warning');
                     generateWorkoutBtn.innerHTML = originalIcon;
                     return;
                 }
 
-                // Call the robust API function from api.js
                 const programJson = await callGeminiAPI("Hemen spor programımı oluştur.", apiKey, instruction);
                 
                 appState.fitnessProgram = programJson;
                 saveState();
                 renderRoutine();
+                showToast('💪 Program Hazır!', 'AI antrenman programın oluşturuldu.', 'success');
                 
             } catch (err) {
                 console.error("AI Error:", err);
-                alert("HATA: " + err.message);
+                showToast('❌ Hata', err.message, 'error', 6000);
             }
 
             generateWorkoutBtn.innerHTML = originalIcon;
         });
     }
 
-    // 2. Reset Program
+    // ═══ Reset Program ═══
     if (resetWorkoutBtn) {
         resetWorkoutBtn.addEventListener('click', () => {
-            if(confirm("Mevcut programın silinip yeni bir program kurulumuna geçilecek. Emin misin?")) {
+            if (confirm("Mevcut programın silinip yeni bir program kurulumuna geçilecek. Emin misin?")) {
                 appState.fitnessProgram = null;
                 saveState();
                 renderRoutine();
+                showToast('🔄 Program Sıfırlandı', 'Yeni program oluşturabilirsiniz.', 'info');
             }
         });
     }
 
-    // 3. Ekstra Egzersiz ve Kalori
-    if(fitnessAiBtn && fitnessAiInput) {
-        
-        // Enter tuşu desteği
+    // ═══ Extra Exercise (AI Calorie) ═══
+    if (fitnessAiBtn && fitnessAiInput) {
         fitnessAiInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                fitnessAiBtn.click();
-            }
+            if (e.key === 'Enter') fitnessAiBtn.click();
         });
 
         fitnessAiBtn.addEventListener('click', async () => {
             const query = fitnessAiInput.value.trim();
-            if(!query) return;
+            if (!query) return;
 
             const originalIcon = fitnessAiBtn.innerHTML;
             fitnessAiBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
@@ -249,22 +367,18 @@ export function initFitness() {
                 const apiKey = localStorage.getItem('geminiApiKey');
                 
                 if (!apiKey) {
-                    alert('Lütfen API anahtarınızı girin.');
+                    showToast('🔑 API Anahtarı Gerekli', 'Lütfen ayarlardan API anahtarınızı girin.', 'warning');
                     fitnessAiBtn.innerHTML = originalIcon;
                     return;
                 }
 
                 const resultJson = await callGeminiAPI(query, apiKey, instruction);
-                
-                // Model 'calories' olarak da dönebilir
                 const burnedVal = resultJson.burned || resultJson.calories;
 
-                if(burnedVal) {
-                    // Ekstra hareketi bugünün listesine ekle
+                if (burnedVal) {
                     const todayDay = getTodayDayStr();
                     if (!appState.fitnessProgram) appState.fitnessProgram = {};
                     
-                    // Gün listesini bul veya oluştur
                     let dayList = appState.fitnessProgram[todayDay] || appState.fitnessProgram[dayNames[todayDay]];
                     if (!dayList) {
                         appState.fitnessProgram[todayDay] = [];
@@ -273,10 +387,10 @@ export function initFitness() {
                     
                     dayList.push({
                         name: `Ekstra: ${query} (${burnedVal} kcal)`,
-                        done: true // otomatik tikli gelir
+                        done: true
                     });
 
-                    // TAKVİME ENTEGRE ET!
+                    // Takvime entegre et
                     const dateKey = appState.lastAccessDate || new Date().toLocaleDateString('tr-TR');
                     if (!appState.calendar) appState.calendar = {};
                     if (!appState.calendar[dateKey]) appState.calendar[dateKey] = [];
@@ -284,34 +398,35 @@ export function initFitness() {
                     appState.calendar[dateKey].push({
                         id: Date.now(),
                         text: `💪 Spor: ${query} (${burnedVal} kcal yaktın)`,
-                        type: 'event', // Turuncu nokta
+                        type: 'event',
                         done: true
                     });
 
                     saveState();
-                    recalcCalories(); // Calls saveState and updateUI implicitly
+                    recalcCalories();
                     renderRoutine();
                     
                     fitnessAiInput.value = '';
+                    showToast('🔥 Ekstra Aktivite', `${query} — ${burnedVal} kcal yakıldı!`, 'fire', 4000);
                 } else {
-                    alert("Yapay Zeka kaloriyi hesaplayamadı (Bilinmeyen veri döndü).");
+                    showToast('⚠️ Hesaplanamadı', 'Yapay Zeka kaloriyi hesaplayamadı.', 'warning');
                 }
             } catch (err) {
                 console.error("AI Error:", err);
-                alert("Kalori hesaplanamadı: " + err.message);
+                showToast('❌ Hata', err.message, 'error');
             }
             
             fitnessAiBtn.innerHTML = originalIcon;
         });
     }
 
-    // 4. Manuel Program Ekleme Logic
+    // ═══ Manual Program Entry ═══
     function handleManualAdd(daySelect, inputElement) {
         const selectedDay = daySelect.value;
         const exerciseText = inputElement.value.trim();
         
         if (!exerciseText) {
-            alert("Lütfen bir egzersiz yazın.");
+            showToast('⚠️ Boş Giriş', 'Lütfen bir egzersiz yazın.', 'warning');
             return;
         }
 
@@ -333,21 +448,18 @@ export function initFitness() {
         saveState();
         inputElement.value = '';
         renderRoutine();
+        showToast('✅ Eklendi', `${exerciseText} programa eklendi.`, 'success', 2000);
     }
 
     if (manualFitAddBtn1) {
-        manualFitAddBtn1.addEventListener('click', () => {
-            handleManualAdd(manualFitDaySelect1, manualFitInput1);
-        });
+        manualFitAddBtn1.addEventListener('click', () => handleManualAdd(manualFitDaySelect1, manualFitInput1));
         manualFitInput1.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleManualAdd(manualFitDaySelect1, manualFitInput1);
         });
     }
 
     if (manualFitAddBtn2) {
-        manualFitAddBtn2.addEventListener('click', () => {
-            handleManualAdd(manualFitDaySelect2, manualFitInput2);
-        });
+        manualFitAddBtn2.addEventListener('click', () => handleManualAdd(manualFitDaySelect2, manualFitInput2));
         manualFitInput2.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleManualAdd(manualFitDaySelect2, manualFitInput2);
         });

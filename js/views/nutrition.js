@@ -1,6 +1,7 @@
 import { appState, saveState } from '../state.js';
 import { callGeminiAPI } from '../api.js';
 import { updateUI, resetBtn } from '../ui.js';
+import { showToast } from '../notifications.js';
 
 export function initNutrition() {
     const mealsContainer = document.getElementById('mealsContainer');
@@ -12,50 +13,40 @@ export function initNutrition() {
         mealsContainer.innerHTML = '';
 
         if (!appState.meals || appState.meals.length === 0) {
-            mealsContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); margin-top: 10px;">Bugün henüz bir öğün kaydetmedin.</p>';
+            mealsContainer.innerHTML = '<p class="text-center text-muted text-sm mt-sm">Bugün henüz bir öğün kaydetmedin.</p>';
             return;
         }
 
         appState.meals.forEach((meal, index) => {
             const card = document.createElement('div');
-            card.style.background = 'rgba(255,255,255,0.05)';
-            card.style.borderRadius = '10px';
-            card.style.padding = '12px 15px';
-            card.style.marginBottom = '10px';
-            card.style.display = 'flex';
-            card.style.justifyContent = 'space-between';
-            card.style.alignItems = 'center';
+            card.className = 'meal-card';
 
             let itemsHtml = '';
             if (meal.items && meal.items.length > 0) {
-                itemsHtml = `<ul style="margin-top: 10px; margin-bottom: 10px; padding-left: 0; list-style: none; font-size: 0.85rem; color: var(--text-secondary); border-left: 2px solid var(--accent-orange); padding-left: 10px;">` +
+                itemsHtml = `<ul class="meal-items">` +
                     meal.items.map(item => `
-                        <li style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <li>
                             <span>${item.name}</span>
                             <span>${item.calories} kcal</span>
                         </li>
                     `).join('') + `</ul>`;
             } else {
-                itemsHtml = `<p style="margin: 10px 0; font-size: 0.85rem; color: var(--text-secondary);">${meal.rawInput || meal.name}</p>`;
+                itemsHtml = `<p class="text-sm text-muted" style="margin: var(--space-sm) 0;">${meal.rawInput || meal.name}</p>`;
             }
 
             card.innerHTML = `
-                <div style="flex: 1;">
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <h4 style="margin: 0; font-size: 0.95rem; color: var(--text-primary);">
-                            <i class="fa-regular fa-clock" style="margin-right:5px; color: var(--accent-orange);"></i> ${meal.time}
-                        </h4>
-                        <button class="delete-meal-btn" data-index="${index}" style="background: none; border: none; color: var(--accent-red); cursor: pointer; padding: 5px;"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                    
-                    ${itemsHtml}
+                <div class="meal-header">
+                    <span class="meal-time">
+                        <i class="fa-regular fa-clock"></i> ${meal.time}
+                    </span>
+                    <button class="btn-icon danger delete-meal-btn" data-index="${index}"><i class="fa-solid fa-trash"></i></button>
+                </div>
+                
+                ${itemsHtml}
 
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
-                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-secondary);">
-                            P: ${meal.protein}g, K: ${meal.carbs}g, Y: ${meal.fat}g
-                        </p>
-                        <strong style="color: var(--accent-orange); font-size: 1.1rem;">Toplam: ${meal.calories} kcal</strong>
-                    </div>
+                <div class="meal-footer">
+                    <span class="meal-macros">P: ${meal.protein}g, K: ${meal.carbs}g, Y: ${meal.fat}g</span>
+                    <span class="meal-total">Toplam: ${meal.calories} kcal</span>
                 </div>
             `;
             mealsContainer.appendChild(card);
@@ -77,15 +68,14 @@ export function initNutrition() {
                 saveState();
                 updateUI();
                 renderMeals();
+                showToast('🗑️ Öğün Silindi', 'Kalori ve makrolar güncellendi.', 'info', 2000);
             });
         });
     }
 
-    if(aiFoodBtn && aiFoodInput) {
+    if (aiFoodBtn && aiFoodInput) {
         aiFoodInput.addEventListener('keypress', (e) => {
-            if(e.key === 'Enter') {
-                aiFoodBtn.click();
-            }
+            if (e.key === 'Enter') aiFoodBtn.click();
         });
 
         aiFoodBtn.addEventListener('click', async () => {
@@ -93,12 +83,12 @@ export function initNutrition() {
             const apiKey = localStorage.getItem('geminiApiKey');
 
             if (!apiKey) {
-                alert("Lütfen önce Ayarlar menüsünden Gemini API anahtarınızı girin!");
+                showToast('🔑 API Anahtarı Gerekli', 'Ayarlar menüsünden Gemini API anahtarınızı girin.', 'warning');
                 document.querySelector('[data-target="view-settings"]').click();
                 return;
             }
 
-            if(query) {
+            if (query) {
                 const originalIcon = aiFoodBtn.innerHTML;
                 aiFoodBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
                 aiFoodBtn.style.opacity = '0.7';
@@ -113,7 +103,7 @@ export function initNutrition() {
                         appState.consumedCarbs += parseInt(result.carbs || 0);
                         appState.consumedFat += parseInt(result.fat || 0);
                         
-                        if(!appState.meals) appState.meals = [];
+                        if (!appState.meals) appState.meals = [];
                         appState.meals.push({
                             id: 'meal_' + Date.now(),
                             name: "Öğün",
@@ -123,7 +113,7 @@ export function initNutrition() {
                             protein: result.protein,
                             carbs: result.carbs,
                             fat: result.fat,
-                            time: new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'})
+                            time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
                         });
                         
                         saveState();
@@ -132,30 +122,24 @@ export function initNutrition() {
 
                         aiFoodBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
                         aiFoodBtn.style.background = 'var(--accent-green)';
-                        aiFoodBtn.style.color = 'white';
                         aiFoodInput.value = '';
+                        
+                        showToast('🍽️ Öğün Eklendi', `${result.calories} kcal — P:${result.protein}g K:${result.carbs}g Y:${result.fat}g`, 'success', 4000);
                     } else {
-                        alert("Yapay zeka gıdayı tam anlayamadı.");
+                        showToast('⚠️ Analiz Başarısız', 'Yapay zeka gıdayı tam anlayamadı.', 'warning');
                         resetBtn(aiFoodBtn, originalIcon);
                     }
                 } catch (error) {
-                    alert("Hata: " + error.message);
+                    showToast('❌ Hata', error.message, 'error', 6000);
                     resetBtn(aiFoodBtn, originalIcon);
                 } finally {
                     setTimeout(() => resetBtn(aiFoodBtn, originalIcon), 2000);
                 }
             }
         });
-        
-        aiFoodInput.addEventListener('keypress', (e) => {
-            if(e.key === 'Enter') {
-                aiFoodBtn.click();
-            }
-        });
     }
 
-    // Dashboard'dan (başka sekmeden) öğün eklendiğinde listenin anında güncellenmesi için
+    // Re-render when state updates
     window.addEventListener('stateUpdated', renderMeals);
-
     renderMeals();
 }

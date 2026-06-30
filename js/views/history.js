@@ -2,85 +2,80 @@ import { appState } from '../state.js';
 
 export function initHistory() {
     const historyContainer = document.getElementById('historyContainer');
-    if(!historyContainer) return;
+    if (!historyContainer) return;
 
     function renderHistory() {
         if (!appState.history || appState.history.length === 0) {
-            historyContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); margin-top: 20px;">Henüz geçmiş bir kaydınız bulunmuyor. Her yeni günde, bir önceki günün verileri buraya arşivlenir.</p>';
+            historyContainer.innerHTML = '<p class="text-center text-muted mt-md">Henüz geçmiş bir kaydınız bulunmuyor. Her yeni günde, bir önceki günün verileri buraya arşivlenir.</p>';
             return;
         }
 
         historyContainer.innerHTML = '';
 
-        appState.history.forEach((day, index) => {
+        appState.history.forEach((day) => {
             const card = document.createElement('div');
-            card.className = 'card';
-            card.style.marginBottom = '15px';
-            card.style.padding = '10px 15px';
+            card.className = 'card history-card';
             
             // Generate meal list HTML
-            let mealsHTML = '<p style="color: var(--text-secondary); font-size: 0.9rem;">Yemek kaydedilmemiş.</p>';
+            let mealsHTML = '<p class="text-sm text-muted">Yemek kaydedilmemiş.</p>';
             if (day.meals && day.meals.length > 0) {
-                mealsHTML = `<ul class="todo-list" style="margin-top: 5px;">` + 
+                mealsHTML = `<ul class="todo-list">` + 
                     day.meals.map(m => `
-                        <li style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 8px;">
-                            <span><i class="fa-solid fa-utensils" style="margin-right:5px; opacity:0.7;"></i> ${m.name}</span>
-                            <strong style="color: var(--accent-orange);">${m.calories} kcal</strong>
+                        <li class="flex-between text-sm mb-sm">
+                            <span><i class="fa-solid fa-utensils text-muted" style="margin-right: 5px; opacity: 0.7;"></i> ${m.name}</span>
+                            <strong class="color-orange">${m.calories} kcal</strong>
                         </li>
                     `).join('') + `</ul>`;
             }
 
             // Generate vitamins HTML
-            let vitHTML = '<p style="color: var(--text-secondary); font-size: 0.9rem;">Vitamin seçilmemiş.</p>';
+            let vitHTML = '<p class="text-sm text-muted">Vitamin seçilmemiş.</p>';
             if (day.vitamins && day.vitamins.length > 0) {
                 const checkedVits = day.vitamins.filter(v => v.checked);
-                if(checkedVits.length > 0) {
-                    vitHTML = `<ul style="padding-left: 5px; font-size: 0.9rem; margin-top: 5px; color: var(--text-primary); list-style:none;">` +
-                        checkedVits.map(v => `<li style="margin-bottom: 5px;"><i class="fa-solid fa-check" style="color:var(--accent-green); margin-right:5px;"></i> ${v.name}</li>`).join('') + `</ul>`;
+                if (checkedVits.length > 0) {
+                    vitHTML = `<ul style="padding-left: 0; list-style: none;">` +
+                        checkedVits.map(v => `<li class="text-sm mb-sm"><i class="fa-solid fa-check color-green" style="margin-right: 5px;"></i> ${v.name}</li>`).join('') + `</ul>`;
                 }
             }
 
             card.innerHTML = `
-                <div class="history-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-                    <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary);"><i class="fa-regular fa-calendar-check" style="color: var(--accent-green); margin-right: 5px;"></i> ${day.date}</h3>
+                <div class="history-header">
+                    <h3><i class="fa-regular fa-calendar-check"></i> ${day.date}</h3>
                     <span><i class="fa-solid fa-chevron-down chevron-icon"></i></span>
                 </div>
-                <div class="history-body" style="display: none; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center;">
-                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Alınan Kalori</p>
-                            <strong style="color: var(--accent-orange); font-size: 1.2rem;">${day.consumedCalories || 0} kcal</strong>
+                <div class="history-body">
+                    <div class="history-stat-grid">
+                        <div class="history-stat">
+                            <div class="history-stat-label">Alınan Kalori</div>
+                            <div class="history-stat-value color-orange">${day.consumedCalories || 0} kcal</div>
                         </div>
-                        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center;">
-                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Yakılan Kalori</p>
-                            <strong style="color: var(--accent-green); font-size: 1.2rem;">${day.burnedCalories || 0} kcal</strong>
+                        <div class="history-stat">
+                            <div class="history-stat-label">Yakılan Kalori</div>
+                            <div class="history-stat-value color-green">${day.burnedCalories || 0} kcal</div>
+                        </div>
+                        <div class="history-stat">
+                            <div class="history-stat-label">Su (Litre)</div>
+                            <div class="history-stat-value color-blue">${day.waterIntake || 0} L</div>
+                        </div>
+                        <div class="history-stat">
+                            <div class="history-stat-label">O Günkü Kilo</div>
+                            <div class="history-stat-value">${day.weight || '-'} kg</div>
                         </div>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center;">
-                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Su (Litre)</p>
-                            <strong style="color: var(--accent-blue); font-size: 1.2rem;">${day.waterIntake || 0} L</strong>
-                        </div>
-                        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center;">
-                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">O Günkü Kilo</p>
-                            <strong style="color: white; font-size: 1.2rem;">${day.weight || '-'} kg</strong>
+                    <div class="history-stat" style="margin-bottom: var(--space-md); padding: var(--space-md);">
+                        <h4 class="text-sm text-muted text-center mb-sm"><i class="fa-solid fa-chart-pie"></i> Makrolar</h4>
+                        <div style="display: flex; justify-content: space-around; font-size: 0.88rem;">
+                            <div class="text-center"><span style="color: #FF5722;">Pro:</span> <strong>${day.macros?.protein || 0}g</strong></div>
+                            <div class="text-center"><span style="color: #4CAF50;">Karb:</span> <strong>${day.macros?.carbs || 0}g</strong></div>
+                            <div class="text-center"><span style="color: #FFC107;">Yağ:</span> <strong>${day.macros?.fat || 0}g</strong></div>
                         </div>
                     </div>
 
-                    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                        <h4 style="margin-bottom: 10px; font-size: 0.95rem; color: var(--text-secondary); text-align: center;"><i class="fa-solid fa-chart-pie"></i> Makrolar</h4>
-                        <div style="display: flex; justify-content: space-around; font-size: 0.9rem;">
-                            <div style="text-align: center;"><span style="color: #FF5722;">Pro:</span> <strong>${day.macros?.protein || 0}g</strong></div>
-                            <div style="text-align: center;"><span style="color: #4CAF50;">Karb:</span> <strong>${day.macros?.carbs || 0}g</strong></div>
-                            <div style="text-align: center;"><span style="color: #FFC107;">Yağ:</span> <strong>${day.macros?.fat || 0}g</strong></div>
-                        </div>
-                    </div>
-
-                    <h4 style="margin-bottom: 5px; font-size: 0.95rem; color: var(--text-secondary);"><i class="fa-solid fa-utensils"></i> Yenilen Öğünler</h4>
+                    <h4 class="text-sm text-muted mb-sm"><i class="fa-solid fa-utensils"></i> Yenilen Öğünler</h4>
                     ${mealsHTML}
                     
-                    <h4 style="margin-bottom: 5px; margin-top: 15px; font-size: 0.95rem; color: var(--text-secondary);"><i class="fa-solid fa-pills"></i> Alınan Vitaminler</h4>
+                    <h4 class="text-sm text-muted mb-sm mt-md"><i class="fa-solid fa-pills"></i> Alınan Vitaminler</h4>
                     ${vitHTML}
                 </div>
             `;
@@ -93,10 +88,9 @@ export function initHistory() {
             const icon = card.querySelector('.chevron-icon');
 
             header.addEventListener('click', () => {
-                const isHidden = body.style.display === 'none';
+                const isHidden = body.style.display === 'none' || !body.style.display || body.style.display === '';
                 body.style.display = isHidden ? 'block' : 'none';
-                icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
-                icon.style.transition = 'transform 0.3s ease';
+                icon.classList.toggle('open', isHidden);
             });
         });
     }

@@ -1,4 +1,5 @@
 import { appState, switchDate } from './state.js';
+import { calculateStreak } from './notifications.js';
 
 export function updateUI() {
     const currentWeightUI = document.getElementById('currentWeightUI');
@@ -12,10 +13,18 @@ export function updateUI() {
     
     const greetingText = document.getElementById('greetingText');
 
-    if(greetingText) greetingText.textContent = `Günaydın, ${appState.name || 'Kullanıcı'}`;
+    // Greeting based on time of day
+    if (greetingText) {
+        const hour = new Date().getHours();
+        let greeting = 'Merhaba';
+        if (hour < 12) greeting = 'Günaydın';
+        else if (hour < 18) greeting = 'İyi günler';
+        else greeting = 'İyi akşamlar';
+        greetingText.textContent = `${greeting}, ${appState.name || 'Kullanıcı'}`;
+    }
 
-    if(currentWeightUI) currentWeightUI.textContent = `${appState.weight} kg`;
-    if(targetWeightUI) targetWeightUI.textContent = appState.targetWeight || 75;
+    if (currentWeightUI) currentWeightUI.textContent = `${appState.weight} kg`;
+    if (targetWeightUI) targetWeightUI.textContent = appState.targetWeight || 75;
     
     // Net Calories = Consumed - Burned
     const burned = appState.burnedCalories || 0;
@@ -23,12 +32,12 @@ export function updateUI() {
     const remaining = Math.max(0, appState.calorieGoal - netCalories);
     const deficit = appState.calorieGoal - netCalories;
     
-    if(consumedCaloriesBigUI) consumedCaloriesBigUI.textContent = appState.consumedCalories;
-    if(targetCaloriesBigUI) targetCaloriesBigUI.textContent = appState.calorieGoal;
-    if(remainingCaloriesBigUI) remainingCaloriesBigUI.textContent = `${remaining} kcal`;
-    if(burnedCaloriesBigUI) burnedCaloriesBigUI.textContent = `${burned} kcal`;
-    if(calorieDeficitUI) {
-        if(deficit >= 0) {
+    if (consumedCaloriesBigUI) consumedCaloriesBigUI.textContent = appState.consumedCalories;
+    if (targetCaloriesBigUI) targetCaloriesBigUI.textContent = appState.calorieGoal;
+    if (remainingCaloriesBigUI) remainingCaloriesBigUI.textContent = `${remaining} kcal`;
+    if (burnedCaloriesBigUI) burnedCaloriesBigUI.textContent = `${burned} kcal`;
+    if (calorieDeficitUI) {
+        if (deficit >= 0) {
             calorieDeficitUI.textContent = `${deficit} kcal (Açık)`;
             calorieDeficitUI.style.color = 'var(--accent-green)';
         } else {
@@ -37,13 +46,13 @@ export function updateUI() {
         }
     }
     
-    if(calorieProgressBar) {
+    if (calorieProgressBar) {
         const percent = Math.min(100, (appState.consumedCalories / Math.max(1, appState.calorieGoal)) * 100);
         calorieProgressBar.style.width = `${percent}%`;
-        if(percent > 100) {
+        if (percent > 100) {
             calorieProgressBar.style.background = 'var(--accent-red)';
         } else {
-            calorieProgressBar.style.background = 'linear-gradient(90deg, #ff8a00, #e52e71)';
+            calorieProgressBar.style.background = '';
         }
     }
 
@@ -73,8 +82,111 @@ export function updateUI() {
         if (uiFatGoal) uiFatGoal.textContent = appState.macroGoals.fat;
         if (barFat) barFat.style.width = Math.min(100, (appState.consumedFat / Math.max(1, appState.macroGoals.fat)) * 100) + '%';
     }
+
+    // ═══ NEW WIDGETS ═══
+
+    // Streak Widget
+    updateStreakWidget();
+
+    // Water circular progress
+    updateWaterWidget();
+
+    // Sleep widget
+    updateSleepWidget();
+
+    // BMI widget
+    updateBMIWidget();
 }
 
+// ═══ Streak Widget ═══
+function updateStreakWidget() {
+    const streakCard = document.getElementById('streakCard');
+    const streakCount = document.getElementById('streakCount');
+    const streakLabel = document.getElementById('streakLabel');
+    
+    if (!streakCard) return;
+    
+    const streak = calculateStreak();
+    
+    if (streak > 0) {
+        streakCard.style.display = 'flex';
+        if (streakCount) streakCount.textContent = streak;
+        if (streakLabel) {
+            if (streak === 1) streakLabel.textContent = 'gün veri girdin — serini başlat!';
+            else if (streak < 7) streakLabel.textContent = `gün üst üste — devam et!`;
+            else if (streak < 30) streakLabel.textContent = `gün üst üste — harikasın! 💪`;
+            else streakLabel.textContent = `gün üst üste — efsane! 🏆`;
+        }
+    } else {
+        streakCard.style.display = 'none';
+    }
+}
+
+// ═══ Water Circular Progress ═══
+function updateWaterWidget() {
+    const fill = document.getElementById('waterCircleFill');
+    const value = document.getElementById('widgetWaterValue');
+    
+    if (!fill || !value) return;
+    
+    const goalLitres = (appState.waterGoal || 3000) / 1000;
+    const current = appState.waterIntake || 0;
+    const percent = Math.min(100, (current / goalLitres) * 100);
+    
+    // SVG circle math: circumference = 2 * PI * r = 2 * 3.14159 * 15.5 ≈ 97.4
+    const circumference = 97.4;
+    const offset = circumference - (percent / 100) * circumference;
+    fill.style.strokeDashoffset = offset;
+    
+    value.textContent = `${current.toFixed(1)}L`;
+}
+
+// ═══ Sleep Widget ═══
+function updateSleepWidget() {
+    const fill = document.getElementById('sleepCircleFill');
+    const value = document.getElementById('widgetSleepValue');
+    
+    if (!fill || !value) return;
+    
+    const sleep = appState.sleepHours || 0;
+    const ideal = 8; // 8 hours ideal
+    const percent = Math.min(100, (sleep / ideal) * 100);
+    
+    const circumference = 97.4;
+    const offset = circumference - (percent / 100) * circumference;
+    fill.style.strokeDashoffset = offset;
+    
+    value.textContent = `${sleep}s`;
+}
+
+// ═══ BMI Widget ═══
+function updateBMIWidget() {
+    const fill = document.getElementById('bmiCircleFill');
+    const value = document.getElementById('widgetBMIValue');
+    
+    if (!fill || !value) return;
+    
+    const heightM = (appState.height || 180) / 100;
+    const weight = appState.weight || 80;
+    const bmi = weight / (heightM * heightM);
+    
+    value.textContent = bmi.toFixed(1);
+    
+    // BMI scale: 15-40 mapped to 0-100%
+    const percent = Math.min(100, Math.max(0, ((bmi - 15) / 25) * 100));
+    
+    const circumference = 97.4;
+    const offset = circumference - (percent / 100) * circumference;
+    fill.style.strokeDashoffset = offset;
+    
+    // Color based on BMI
+    if (bmi < 18.5) fill.setAttribute('stroke', 'var(--accent-blue)');
+    else if (bmi < 25) fill.setAttribute('stroke', 'var(--accent-green)');
+    else if (bmi < 30) fill.setAttribute('stroke', 'var(--accent-orange)');
+    else fill.setAttribute('stroke', 'var(--accent-red)');
+}
+
+// ═══ Navigation ═══
 export function initNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
     const views = document.querySelectorAll('.view');
@@ -89,72 +201,67 @@ export function initNavigation() {
             item.classList.add('active');
             
             const targetId = item.getAttribute('data-target');
-            document.getElementById(targetId).classList.add('active');
+            const targetView = document.getElementById(targetId);
+            if (targetView) targetView.classList.add('active');
         });
     });
 
-    const dateSelector = document.getElementById('dateSelector');
     const dateDisplayBtn = document.getElementById('dateDisplayBtn');
     const dateTextUI = document.getElementById('dateTextUI');
 
-    if (dateSelector && dateTextUI) {
-        // Init value to appState.lastAccessDate (DD.MM.YYYY to YYYY-MM-DD)
+    if (dateDisplayBtn && dateTextUI) {
+        // Init date display
         let yyyymmdd = appState.lastAccessDate;
         const parts = appState.lastAccessDate.split('.');
         if (parts.length === 3) {
             yyyymmdd = `${parts[2]}-${parts[1]}-${parts[0]}`;
         }
         
-        dateSelector.value = yyyymmdd;
-        
         // Beautiful Date Display
         const dObj = new Date(yyyymmdd);
-        if(!isNaN(dObj)) {
+        if (!isNaN(dObj)) {
             dateTextUI.textContent = dObj.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
         } else {
             dateTextUI.textContent = appState.lastAccessDate;
         }
 
-        // --- Custom Calendar Logic ---
+        // --- Custom Calendar Modal Logic ---
         let calCurrentYear, calCurrentMonth;
 
         function renderCalendar(year, month) {
             const calDays = document.getElementById('calDays');
             const calMonthYear = document.getElementById('calMonthYear');
             
-            if(!calDays || !calMonthYear) return;
+            if (!calDays || !calMonthYear) return;
 
             calDays.innerHTML = '';
             
             const firstDay = new Date(year, month, 1);
-            let startingDay = firstDay.getDay() - 1; // 0=Monday, 6=Sunday
+            let startingDay = firstDay.getDay() - 1;
             if (startingDay < 0) startingDay = 6; 
             
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const monthName = new Date(year, month, 1).toLocaleDateString('tr-TR', { month: 'long' });
             calMonthYear.textContent = `${monthName} ${year}`;
             
-            for(let i = 0; i < startingDay; i++) {
+            for (let i = 0; i < startingDay; i++) {
                 const empty = document.createElement('div');
                 calDays.appendChild(empty);
             }
             
-            for(let i = 1; i <= daysInMonth; i++) {
+            for (let i = 1; i <= daysInMonth; i++) {
                 const dayBtn = document.createElement('div');
                 dayBtn.textContent = i;
-                dayBtn.style.padding = '8px 0';
-                dayBtn.style.cursor = 'pointer';
-                dayBtn.style.borderRadius = '8px';
-                dayBtn.style.transition = '0.2s';
+                dayBtn.className = 'cal-day';
                 
-                if(!isNaN(dObj) && year === dObj.getFullYear() && month === dObj.getMonth() && i === dObj.getDate()) {
-                    dayBtn.style.background = 'var(--accent-blue)';
-                    dayBtn.style.color = '#000';
-                    dayBtn.style.fontWeight = 'bold';
-                } else {
-                    dayBtn.style.color = 'white';
-                    dayBtn.onmouseover = () => dayBtn.style.background = 'rgba(255,255,255,0.15)';
-                    dayBtn.onmouseout = () => dayBtn.style.background = 'transparent';
+                if (!isNaN(dObj) && year === dObj.getFullYear() && month === dObj.getMonth() && i === dObj.getDate()) {
+                    dayBtn.classList.add('selected');
+                }
+                
+                // Check if today
+                const today = new Date();
+                if (year === today.getFullYear() && month === today.getMonth() && i === today.getDate()) {
+                    dayBtn.classList.add('today');
                 }
                 
                 dayBtn.onclick = async () => {
@@ -170,48 +277,46 @@ export function initNavigation() {
             }
         }
 
-        if (dateDisplayBtn) {
-            dateDisplayBtn.addEventListener('click', () => {
-                const calModal = document.getElementById('calendarModal');
-                if(!calModal) return;
+        dateDisplayBtn.addEventListener('click', () => {
+            const calModal = document.getElementById('calendarModal');
+            if (!calModal) return;
 
-                if(!isNaN(dObj)) {
-                    calCurrentYear = dObj.getFullYear();
-                    calCurrentMonth = dObj.getMonth();
-                } else {
-                    const today = new Date();
-                    calCurrentYear = today.getFullYear();
-                    calCurrentMonth = today.getMonth();
-                }
-                
-                renderCalendar(calCurrentYear, calCurrentMonth);
-                calModal.style.display = 'flex';
+            if (!isNaN(dObj)) {
+                calCurrentYear = dObj.getFullYear();
+                calCurrentMonth = dObj.getMonth();
+            } else {
+                const today = new Date();
+                calCurrentYear = today.getFullYear();
+                calCurrentMonth = today.getMonth();
+            }
+            
+            renderCalendar(calCurrentYear, calCurrentMonth);
+            calModal.style.display = 'flex';
+        });
+        
+        const calCloseBtn = document.getElementById('calCloseBtn');
+        if (calCloseBtn) {
+            calCloseBtn.addEventListener('click', () => {
+                document.getElementById('calendarModal').style.display = 'none';
             });
-            
-            const calCloseBtn = document.getElementById('calCloseBtn');
-            if(calCloseBtn) {
-                calCloseBtn.addEventListener('click', () => {
-                    document.getElementById('calendarModal').style.display = 'none';
-                });
-            }
-            
-            const calPrevBtn = document.getElementById('calPrevBtn');
-            if(calPrevBtn) {
-                calPrevBtn.addEventListener('click', () => {
-                    calCurrentMonth--;
-                    if(calCurrentMonth < 0) { calCurrentMonth = 11; calCurrentYear--; }
-                    renderCalendar(calCurrentYear, calCurrentMonth);
-                });
-            }
-            
-            const calNextBtn = document.getElementById('calNextBtn');
-            if(calNextBtn) {
-                calNextBtn.addEventListener('click', () => {
-                    calCurrentMonth++;
-                    if(calCurrentMonth > 11) { calCurrentMonth = 0; calCurrentYear++; }
-                    renderCalendar(calCurrentYear, calCurrentMonth);
-                });
-            }
+        }
+        
+        const calPrevBtn = document.getElementById('calPrevBtn');
+        if (calPrevBtn) {
+            calPrevBtn.addEventListener('click', () => {
+                calCurrentMonth--;
+                if (calCurrentMonth < 0) { calCurrentMonth = 11; calCurrentYear--; }
+                renderCalendar(calCurrentYear, calCurrentMonth);
+            });
+        }
+        
+        const calNextBtn = document.getElementById('calNextBtn');
+        if (calNextBtn) {
+            calNextBtn.addEventListener('click', () => {
+                calCurrentMonth++;
+                if (calCurrentMonth > 11) { calCurrentMonth = 0; calCurrentYear++; }
+                renderCalendar(calCurrentYear, calCurrentMonth);
+            });
         }
     }
 }

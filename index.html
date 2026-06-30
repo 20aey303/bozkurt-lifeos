@@ -2,12 +2,14 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LifeOS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>LifeOS — Kişisel Yaşam Takibi</title>
     
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#121212">
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="LifeOS: Kişisel sağlık, beslenme, spor ve alışkanlık takip uygulaması. Kalori, makro, su, uyku ve antrenman verilerini tek yerden yönetin.">
+    <meta name="theme-color" content="#06080d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,172 +27,262 @@
 </head>
 <body>
     
-    <!-- Header -->
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- ═══ Header ═══ -->
     <header class="app-header">
         <div class="user-greeting">
             <h1 id="greetingText">Günaydın, Bozkurt</h1>
-            <div style="display: flex; align-items: center; justify-content: flex-start; margin-top: 5px; position: relative;">
-                <div id="dateDisplayBtn" style="background: rgba(255,255,255,0.08); padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.05); transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.color='white';" onmouseout="this.style.background='rgba(255,255,255,0.08)'; this.style.color='var(--text-secondary)';">
-                    <i class="fa-regular fa-calendar" style="color: var(--accent-blue);"></i>
-                    <span id="dateTextUI">Yükleniyor...</span>
-                    <i class="fa-solid fa-chevron-down" style="font-size: 0.7em; opacity: 0.7;"></i>
-                </div>
-                <input type="date" id="dateSelector" style="position: absolute; opacity: 0; pointer-events: none; left: 0; top: 0;">
+            <div id="dateDisplayBtn" class="date-display-btn">
+                <i class="fa-regular fa-calendar color-blue"></i>
+                <span id="dateTextUI">Yükleniyor...</span>
+                <i class="fa-solid fa-chevron-down chevron"></i>
             </div>
+            <input type="date" id="dateSelector" class="hidden">
         </div>
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <i class="fa-solid fa-gear" style="font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-secondary)'" onclick="document.querySelector('[data-target=\'view-settings\']').click()"></i>
+        <div class="header-actions">
+            <i class="fa-solid fa-bell header-icon" id="notifSettingsBtn" title="Bildirim Ayarları"></i>
+            <i class="fa-solid fa-gear header-icon" onclick="document.querySelector('[data-target=\'view-settings\']').click()" title="Ayarlar"></i>
             <div class="profile-pic">
                 <img src="https://api.dicebear.com/6.x/initials/svg?seed=Semih" alt="Profil">
             </div>
         </div>
     </header>
 
-    <!-- Main Content Area (Views) -->
+    <!-- ═══ Main Content ═══ -->
     <main id="main-content">
         
-        <!-- View: Dashboard -->
+        <!-- ═══ View: Dashboard ═══ -->
         <section id="view-dashboard" class="view active">
             
+            <!-- Streak Card -->
+            <div id="streakCard" class="streak-card" style="display: none;">
+                <span class="streak-fire">🔥</span>
+                <div class="streak-info">
+                    <div class="streak-count" id="streakCount">0</div>
+                    <div class="streak-label" id="streakLabel">gün üst üste veri girdin</div>
+                </div>
+            </div>
+
             <!-- Big Calorie Card -->
-            <div class="card glow-orange" style="margin-bottom: 20px; padding: 25px; text-align: center; position: relative; overflow: hidden;">
-                <h3 style="color: var(--accent-orange); margin-bottom: 15px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <div class="card glow-orange calorie-card mb-lg">
+                <h3 class="card-title">
                     <i class="fa-solid fa-fire"></i> Kalori Durumu
                 </h3>
                 
-                <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 5px; font-family: var(--font-sans);">
-                    <span id="consumedCaloriesBigUI">0</span> <span style="font-size: 1.2rem; color: var(--text-secondary); font-weight: 600;">/ <span id="targetCaloriesBigUI">2000</span> kcal</span>
+                <div class="calorie-big-number">
+                    <span id="consumedCaloriesBigUI">0</span>
+                    <span class="calorie-total">/ <span id="targetCaloriesBigUI">2000</span> kcal</span>
                 </div>
                 
-                <div class="progress-container" style="height: 14px; margin: 20px 0; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden;">
-                    <div id="calorieProgressBar" class="progress-bar" style="width: 0%; background: linear-gradient(90deg, #ff8a00, #e52e71); border-radius: 10px; transition: 0.5s ease;"></div>
+                <div class="progress-container thick">
+                    <div id="calorieProgressBar" class="progress-bar gradient-orange"></div>
                 </div>
                 
-                <div style="display: flex; justify-content: space-between; text-align: center; font-size: 0.95rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 10px;">
-                    <div style="flex: 1; border-right: 1px solid rgba(255,255,255,0.1);">
-                        <div style="color: var(--text-secondary); margin-bottom: 5px;">Kalan Hak</div>
-                        <strong id="remainingCaloriesBigUI" style="font-size: 1.2rem; color: white;">2000</strong>
+                <div class="calorie-stats">
+                    <div class="calorie-stat">
+                        <div class="calorie-stat-label">Kalan Hak</div>
+                        <div class="calorie-stat-value" id="remainingCaloriesBigUI">2000 kcal</div>
                     </div>
-                    <div style="flex: 1; border-right: 1px solid rgba(255,255,255,0.1);">
-                        <div style="color: var(--text-secondary); margin-bottom: 5px;">Sporla Yakılan</div>
-                        <strong id="burnedCaloriesBigUI" style="font-size: 1.2rem; color: var(--accent-green);">0</strong>
+                    <div class="calorie-stat">
+                        <div class="calorie-stat-label">Sporla Yakılan</div>
+                        <div class="calorie-stat-value color-green" id="burnedCaloriesBigUI">0 kcal</div>
                     </div>
-                    <div style="flex: 1;">
-                        <div style="color: var(--text-secondary); margin-bottom: 5px;">Kalori Açığı</div>
-                        <strong id="calorieDeficitUI" style="font-size: 1.2rem; color: var(--accent-blue);">0</strong>
+                    <div class="calorie-stat">
+                        <div class="calorie-stat-label">Kalori Açığı</div>
+                        <div class="calorie-stat-value color-blue" id="calorieDeficitUI">0</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Summary Cards -->
+            <!-- Mini Widgets: Water, Sleep, Vitamins -->
+            <div class="widget-grid" id="dashWidgets">
+                <!-- Water Widget -->
+                <div class="mini-widget" id="widgetWater">
+                    <div class="circular-progress" id="waterCircle">
+                        <svg viewBox="0 0 36 36">
+                            <circle class="bg" cx="18" cy="18" r="15.5"/>
+                            <circle class="fill" cx="18" cy="18" r="15.5" 
+                                stroke="var(--accent-blue)" 
+                                stroke-dasharray="97.4" 
+                                stroke-dashoffset="97.4"
+                                id="waterCircleFill"/>
+                        </svg>
+                        <i class="fa-solid fa-droplet progress-icon color-blue"></i>
+                    </div>
+                    <div class="mini-widget-value" id="widgetWaterValue">0L</div>
+                    <div class="mini-widget-label">Su</div>
+                </div>
+                
+                <!-- Sleep Widget -->
+                <div class="mini-widget" id="widgetSleep">
+                    <div class="circular-progress" id="sleepCircle">
+                        <svg viewBox="0 0 36 36">
+                            <circle class="bg" cx="18" cy="18" r="15.5"/>
+                            <circle class="fill" cx="18" cy="18" r="15.5" 
+                                stroke="var(--accent-purple)" 
+                                stroke-dasharray="97.4" 
+                                stroke-dashoffset="97.4"
+                                id="sleepCircleFill"/>
+                        </svg>
+                        <i class="fa-solid fa-moon progress-icon color-purple"></i>
+                    </div>
+                    <div class="mini-widget-value" id="widgetSleepValue">0s</div>
+                    <div class="mini-widget-label">Uyku</div>
+                </div>
+                
+                <!-- BMI Widget -->
+                <div class="mini-widget" id="widgetBMI">
+                    <div class="circular-progress" id="bmiCircle">
+                        <svg viewBox="0 0 36 36">
+                            <circle class="bg" cx="18" cy="18" r="15.5"/>
+                            <circle class="fill" cx="18" cy="18" r="15.5" 
+                                stroke="var(--accent-green)" 
+                                stroke-dasharray="97.4" 
+                                stroke-dashoffset="97.4"
+                                id="bmiCircleFill"/>
+                        </svg>
+                        <i class="fa-solid fa-heart-pulse progress-icon color-green"></i>
+                    </div>
+                    <div class="mini-widget-value" id="widgetBMIValue">--</div>
+                    <div class="mini-widget-label">BMI</div>
+                </div>
+            </div>
+
+            <!-- Summary Cards (Weight + Macros) -->
             <div class="card-grid">
                 <!-- Weight Card -->
-                <div class="card stat-card glow-blue" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
-                    <div class="stat-icon" style="margin-bottom: 10px;"><i class="fa-solid fa-weight-scale"></i></div>
-                    <div class="stat-info">
-                        <h3 id="currentWeightUI" style="font-size: 1.6rem; margin-bottom: 5px;">99.5 kg</h3>
-                        <p style="color: var(--text-secondary);">Hedef: <strong id="targetWeightUI" style="color: white;">85.0</strong> kg</p>
-                    </div>
+                <div class="card stat-card glow-blue">
+                    <div class="stat-icon"><i class="fa-solid fa-weight-scale"></i></div>
+                    <div class="stat-value" id="currentWeightUI">99.5 kg</div>
+                    <p class="stat-label">Hedef: <strong id="targetWeightUI">85.0</strong> kg</p>
                 </div>
 
-                <!-- Makro Takibi -->
-                <div class="card stat-card" style="padding: 15px; display: flex; flex-direction: column; justify-content: center;">
-                    <h3 style="font-size: 1rem; margin-bottom: 15px; font-family: var(--font-sans); color: var(--text-secondary); text-align: center;"><i class="fa-solid fa-chart-pie"></i> Makrolar</h3>
+                <!-- Macros Card -->
+                <div class="card stat-card">
+                    <h3 class="card-title text-center"><i class="fa-solid fa-chart-pie"></i> Makrolar</h3>
                     
-                    <div style="margin-bottom: 12px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px;">
-                            <span>Pro</span>
-                            <span><strong id="uiProtein">0</strong> / <span id="uiProteinGoal">150</span>g</span>
+                    <div class="macro-row">
+                        <div class="macro-header">
+                            <span class="macro-name">Pro</span>
+                            <span class="macro-values"><strong id="uiProtein">0</strong> / <span id="uiProteinGoal">150</span>g</span>
                         </div>
-                        <div class="progress-container" style="height: 6px;"><div id="barProtein" class="progress-bar" style="width: 0%; background: #FF5722;"></div></div>
+                        <div class="progress-container macro-progress">
+                            <div id="barProtein" class="progress-bar bar-protein" style="width: 0%; background: #FF5722;"></div>
+                        </div>
                     </div>
 
-                    <div style="margin-bottom: 12px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px;">
-                            <span>Karb</span>
-                            <span><strong id="uiCarbs">0</strong> / <span id="uiCarbsGoal">200</span>g</span>
+                    <div class="macro-row">
+                        <div class="macro-header">
+                            <span class="macro-name">Karb</span>
+                            <span class="macro-values"><strong id="uiCarbs">0</strong> / <span id="uiCarbsGoal">200</span>g</span>
                         </div>
-                        <div class="progress-container" style="height: 6px;"><div id="barCarbs" class="progress-bar" style="width: 0%; background: #4CAF50;"></div></div>
+                        <div class="progress-container macro-progress">
+                            <div id="barCarbs" class="progress-bar bar-carbs" style="width: 0%; background: #4CAF50;"></div>
+                        </div>
                     </div>
 
-                    <div style="margin-bottom: 0;">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px;">
-                            <span>Yağ</span>
-                            <span><strong id="uiFat">0</strong> / <span id="uiFatGoal">60</span>g</span>
+                    <div class="macro-row mb-0">
+                        <div class="macro-header">
+                            <span class="macro-name">Yağ</span>
+                            <span class="macro-values"><strong id="uiFat">0</strong> / <span id="uiFatGoal">60</span>g</span>
                         </div>
-                        <div class="progress-container" style="height: 6px;"><div id="barFat" class="progress-bar" style="width: 0%; background: #FFC107;"></div></div>
+                        <div class="progress-container macro-progress">
+                            <div id="barFat" class="progress-bar bar-fat" style="width: 0%; background: #FFC107;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Trend Charts -->
+            <div class="card chart-card mb-lg">
+                <div class="flex-between mb-md">
+                    <h3 class="card-title mb-0"><i class="fa-solid fa-chart-line"></i> Kilo İlerlemesi</h3>
+                    <div class="chart-period-selector" id="weightChartPeriod">
+                        <button class="period-btn active" data-period="7">7G</button>
+                        <button class="period-btn" data-period="30">30G</button>
+                        <button class="period-btn" data-period="90">90G</button>
+                    </div>
+                </div>
+                <canvas id="progressChart"></canvas>
             </div>
 
-            <!-- Chart Card -->
-            <div class="card stat-card" style="padding: 15px;">
-                <h3 style="font-size: 1.1rem; margin-bottom: 10px; font-family: var(--font-sans); color: var(--text-secondary);"><i class="fa-solid fa-chart-line"></i> İlerleme Grafiği</h3>
-                <canvas id="progressChart" style="width: 100%; max-height: 200px;"></canvas>
+            <div class="card chart-card mb-lg">
+                <div class="flex-between mb-md">
+                    <h3 class="card-title mb-0"><i class="fa-solid fa-fire-flame-curved"></i> Kalori Trendi</h3>
+                    <div class="chart-period-selector" id="calorieChartPeriod">
+                        <button class="period-btn active" data-period="7">7G</button>
+                        <button class="period-btn" data-period="30">30G</button>
+                    </div>
+                </div>
+                <canvas id="calorieTrendChart"></canvas>
             </div>
 
-            <!-- Günü Kapat Butonu -->
-            <button id="endDayBtn" class="btn" style="width: 100%; margin-top: 15px; margin-bottom: 20px; background: var(--accent-red); padding: 15px; font-size: 1.1rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(239,68,68,0.3);">
+            <!-- End Day Button -->
+            <button id="endDayBtn" class="btn-end-day">
                 <i class="fa-solid fa-moon"></i> Günü Kapat & Yeni Güne Geç
             </button>
         </section>
 
-        <!-- View: Daily (Nutrition + Routine) -->
+        <!-- ═══ View: Daily (Nutrition + Routine) ═══ -->
         <section id="view-daily" class="view">
             <h2><i class="fa-solid fa-sun"></i> Günlük</h2>
             
             <!-- Kilo -->
             <div class="card">
-                <h3 style="margin-bottom: 10px;"><i class="fa-solid fa-scale-unbalanced"></i> Sabah Tartısı</h3>
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 10px;">Yanlış girerseniz, doğru kilonuzu yazıp tekrar kaydetmeniz yeterlidir.</p>
+                <h3 class="card-title"><i class="fa-solid fa-scale-unbalanced"></i> Sabah Tartısı</h3>
+                <p class="text-sm text-muted mb-md">Yanlış girerseniz, doğru kilonuzu yazıp tekrar kaydetmeniz yeterlidir.</p>
                 <div class="ai-input-wrapper">
                     <input type="number" id="morningWeightInput" step="0.1" placeholder="Örn: 99.1">
-                    <button id="saveWeightBtn" style="width: auto; padding: 0 15px;"><i class="fa-solid fa-check"></i> Kaydet</button>
+                    <button id="saveWeightBtn"><i class="fa-solid fa-check"></i> Kaydet</button>
                 </div>
             </div>
 
             <!-- Su -->
             <div class="card">
-                <h3 style="margin-bottom: 10px;"><i class="fa-solid fa-droplet" style="color: var(--accent-blue);"></i> Su Tüketimi (Litre)</h3>
+                <h3 class="card-title"><i class="fa-solid fa-droplet color-blue"></i> Su Tüketimi (Litre)</h3>
                 <div class="ai-input-wrapper">
                     <input type="number" id="waterInput" step="0.5" placeholder="Örn: 0.5 (Yarım Litre)">
-                    <button id="saveWaterBtn" style="width: auto; padding: 0 15px;"><i class="fa-solid fa-plus"></i> İçtim</button>
+                    <button id="saveWaterBtn"><i class="fa-solid fa-plus"></i> İçtim</button>
                 </div>
-                <p style="margin-top: 15px; font-size: 0.95rem; text-align: center; display: flex; justify-content: center; align-items: center; gap: 10px;">
-                    <span>Bugün İçilen: <strong id="waterTotalUI" style="color: var(--accent-blue); font-size: 1.2rem;">0 / 3.0 Litre</strong></span>
-                    <button id="resetWaterBtn" title="Suyu Sıfırla" style="background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 25px; height: 25px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-rotate-left"></i></button>
-                </p>
+                <div class="flex-between mt-md text-sm">
+                    <span>Bugün İçilen: <strong id="waterTotalUI" class="color-blue text-lg">0 / 3.0 Litre</strong></span>
+                    <button id="resetWaterBtn" class="btn-icon" title="Suyu Sıfırla">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
                 <div class="progress-container">
-                    <div class="progress-bar" id="waterProgressBar" style="width: 0%; background: var(--accent-blue);"></div>
+                    <div class="progress-bar gradient-blue" id="waterProgressBar" style="width: 0%;"></div>
                 </div>
             </div>
 
-            <div class="card" style="margin-bottom: 20px;">
-                <h3><i class="fa-solid fa-bed"></i> Dün Geceki Uyku</h3>
-                <div class="ai-input-wrapper" style="margin-top: 10px;">
+            <!-- Uyku -->
+            <div class="card mb-lg">
+                <h3 class="card-title"><i class="fa-solid fa-bed"></i> Dün Geceki Uyku</h3>
+                <div class="ai-input-wrapper mt-sm">
                     <input type="number" id="routineSleepInput" placeholder="Örn: 7.5" step="0.5">
-                    <button id="routineSleepBtn" style="width: auto; padding: 0 15px;"><i class="fa-solid fa-plus"></i> Ekle</button>
+                    <button id="routineSleepBtn"><i class="fa-solid fa-plus"></i> Ekle</button>
                 </div>
-                <p style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);">Şu an kayıtlı: <span id="routineSleepValue">0</span> saat</p>
+                <p class="text-sm text-muted mt-sm">Şu an kayıtlı: <span id="routineSleepValue">0</span> saat</p>
             </div>
 
-            <!-- Günlük Alışkanlık & Vitaminler -->
+            <!-- Vitaminler -->
             <div class="card">
-                <h3 style="margin-bottom: 10px;"><i class="fa-solid fa-capsules"></i> Takviyeler & Vitaminler</h3>
+                <h3 class="card-title"><i class="fa-solid fa-capsules"></i> Takviyeler & Vitaminler</h3>
                 <ul class="todo-list" id="vitaminList">
                     <!-- Dynamic -->
                 </ul>
-                <div class="ai-input-wrapper" style="margin-top: 15px; border-color: rgba(255,255,255,0.1);">
+                <div class="ai-input-wrapper mt-md">
                     <input type="text" id="newVitaminInput" placeholder="Örn: C Vitamini (Sabah)">
-                    <button id="addVitaminBtn" style="width: auto; padding: 0 15px; background: rgba(255,255,255,0.1);"><i class="fa-solid fa-plus"></i></button>
+                    <button id="addVitaminBtn" class="btn-secondary" style="background: rgba(255,255,255,0.08);"><i class="fa-solid fa-plus"></i></button>
                 </div>
             </div>
 
             <!-- Beslenme -->
-            <div class="card" style="margin-bottom: 20px;">
-                <h3 style="margin-bottom: 10px;"><i class="fa-solid fa-utensils"></i> Yeni Öğün Ekle</h3>
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 10px;">Ne yediğini yaz, kalorisini Yapay Zeka hesaplayıp günlüğüne işlesin.</p>
+            <div class="card mb-lg">
+                <h3 class="card-title"><i class="fa-solid fa-utensils"></i> Yeni Öğün Ekle</h3>
+                <p class="text-sm text-muted mb-md">Ne yediğini yaz, kalorisini Yapay Zeka hesaplayıp günlüğüne işlesin.</p>
                 <div class="ai-input-wrapper">
                     <input type="text" id="nutritionAiFoodInput" placeholder="Örn: 1 kase mercimek çorbası ve 1 dilim ekmek">
                     <button id="nutritionAiFoodBtn"><i class="fa-solid fa-paper-plane"></i></button>
@@ -198,48 +290,37 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-bottom: 15px;"><i class="fa-solid fa-list"></i> Bugün Yediklerin</h3>
+                <h3 class="card-title mb-md"><i class="fa-solid fa-list"></i> Bugün Yediklerin</h3>
                 <div id="mealsContainer">
-                    <!-- Dinamik Öğün Listesi JS ile buraya eklenecek -->
+                    <!-- Dinamik Öğün Listesi -->
                 </div>
             </div>
         </section>
 
-        <!-- View: Fitness -->
+        <!-- ═══ View: Fitness ═══ -->
         <section id="view-fitness" class="view">
             <h2><i class="fa-solid fa-dumbbell"></i> Spor & Antrenman</h2>
             
-            <div id="fitnessSetupCard" class="card" style="display: none; text-align: center; margin-bottom: 20px;">
-                <h3 style="margin-bottom: 10px;"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-blue);"></i> AI Antrenör Kurulumu</h3>
-                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px;">Fiziksel özelliklerine ve hedeflerine göre sana özel program hazırlayacağım. Hangi günler spora gitmek istersin?</p>
-                <div id="fitnessDaysContainer" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; justify-content: center;">
-                    <label style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);">
-                        <input type="checkbox" value="1" class="fit-day-checkbox" style="margin-right: 5px;"> Pzt
-                    </label>
-                    <label style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);">
-                        <input type="checkbox" value="2" class="fit-day-checkbox" style="margin-right: 5px;"> Sal
-                    </label>
-                    <label style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);">
-                        <input type="checkbox" value="3" class="fit-day-checkbox" style="margin-right: 5px;"> Çar
-                    </label>
-                    <label style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);">
-                        <input type="checkbox" value="4" class="fit-day-checkbox" style="margin-right: 5px;"> Per
-                    </label>
-                    <label style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);">
-                        <input type="checkbox" value="5" class="fit-day-checkbox" style="margin-right: 5px;"> Cum
-                    </label>
-                    <label style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);">
-                        <input type="checkbox" value="6" class="fit-day-checkbox" style="margin-right: 5px;"> Cmt
-                    </label>
-                    <label style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 20px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);">
-                        <input type="checkbox" value="0" class="fit-day-checkbox" style="margin-right: 5px;"> Paz
-                    </label>
-                </div>
-                <button id="generateWorkoutBtn" style="width: 100%; padding: 12px; border-radius: 20px; background: var(--accent-blue); color: white; border: none; font-weight: bold; cursor: pointer; margin-bottom: 20px;">AI ile Programımı Hazırla</button>
+            <!-- Setup Card -->
+            <div id="fitnessSetupCard" class="card fitness-setup-card" style="display: none;">
+                <h3 class="card-title flex-center"><i class="fa-solid fa-wand-magic-sparkles color-blue"></i> AI Antrenör Kurulumu</h3>
+                <p class="text-sm text-muted mb-md">Fiziksel özelliklerine ve hedeflerine göre sana özel program hazırlayacağım. Hangi günler spora gitmek istersin?</p>
                 
-                <h4 style="margin-bottom: 10px; font-size: 0.95rem; color: var(--accent-orange); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;"><i class="fa-solid fa-pen-to-square"></i> Veya Kendin Oluştur</h4>
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <select id="manualFitDaySelect1" style="border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.05); color: white;">
+                <div class="day-selector" id="fitnessDaysContainer">
+                    <label class="day-chip"><input type="checkbox" value="1" class="fit-day-checkbox"> Pzt</label>
+                    <label class="day-chip"><input type="checkbox" value="2" class="fit-day-checkbox"> Sal</label>
+                    <label class="day-chip"><input type="checkbox" value="3" class="fit-day-checkbox"> Çar</label>
+                    <label class="day-chip"><input type="checkbox" value="4" class="fit-day-checkbox"> Per</label>
+                    <label class="day-chip"><input type="checkbox" value="5" class="fit-day-checkbox"> Cum</label>
+                    <label class="day-chip"><input type="checkbox" value="6" class="fit-day-checkbox"> Cmt</label>
+                    <label class="day-chip"><input type="checkbox" value="0" class="fit-day-checkbox"> Paz</label>
+                </div>
+                
+                <button id="generateWorkoutBtn" class="btn btn-primary btn-full mb-lg">AI ile Programımı Hazırla</button>
+                
+                <h4 class="section-header"><i class="fa-solid fa-pen-to-square"></i> Veya Kendin Oluştur</h4>
+                <div class="ai-input-wrapper mb-sm">
+                    <select id="manualFitDaySelect1" class="select-field" style="flex: 0 0 70px; border: none; background: transparent;">
                         <option value="1">Pzt</option>
                         <option value="2">Sal</option>
                         <option value="3">Çar</option>
@@ -248,152 +329,180 @@
                         <option value="6">Cmt</option>
                         <option value="0">Paz</option>
                     </select>
-                    <input type="text" id="manualFitInput1" placeholder="Örn: Squat 4x10" style="flex: 1; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.05); color: white; outline: none;">
+                    <input type="text" id="manualFitInput1" placeholder="Örn: Squat 4x10">
+                    <button id="manualFitAddBtn1"><i class="fa-solid fa-plus"></i></button>
                 </div>
-                <button id="manualFitAddBtn1" style="width: 100%; padding: 12px; border-radius: 20px; background: rgba(255,255,255,0.1); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Programa Ekle</button>
             </div>
 
-            <div id="fitnessRoutineCard" class="card" style="display: none; margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 id="fitTodayTitle" style="color: var(--accent-green);">Bugün: Dinlenme Günü</h3>
-                    <button id="resetWorkoutBtn" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 0.8rem;"><i class="fa-solid fa-arrows-rotate"></i> Sil & Yeniden Oluştur</button>
+            <!-- Routine Card -->
+            <div id="fitnessRoutineCard" class="card" style="display: none;">
+                <!-- Workout Timer -->
+                <div class="workout-timer" id="workoutTimerSection">
+                    <button id="timerStartBtn" class="timer-btn start"><i class="fa-solid fa-play"></i></button>
+                    <div class="timer-display" id="timerDisplay">00:00</div>
+                    <button id="timerStopBtn" class="timer-btn stop"><i class="fa-solid fa-stop"></i></button>
+                </div>
+
+                <!-- Weekly Tabs -->
+                <div class="weekly-tabs" id="weeklyTabs">
+                    <!-- JS ile doldurulacak -->
+                </div>
+
+                <div class="flex-between mb-md">
+                    <h3 id="fitTodayTitle" class="card-title mb-0 color-green">Bugün: Dinlenme Günü</h3>
+                    <button id="resetWorkoutBtn" class="btn-icon"><i class="fa-solid fa-arrows-rotate"></i> Sil & Yeniden</button>
+                </div>
+
+                <!-- Completion Progress -->
+                <div class="flex-between text-sm mb-sm">
+                    <span class="text-muted">Tamamlanma</span>
+                    <span id="workoutCompletionText" class="font-bold">0%</span>
+                </div>
+                <div class="progress-container mb-md">
+                    <div id="workoutCompletionBar" class="progress-bar gradient-green" style="width: 0%;"></div>
                 </div>
                 
-                <ul class="todo-list" id="fitWorkoutList" style="margin-bottom: 15px;">
+                <ul class="todo-list" id="fitWorkoutList">
                     <!-- Egzersizler buraya gelecek -->
                 </ul>
                 
-                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-bottom: 15px;">
-                    <h4 style="margin-bottom: 10px; font-size: 0.9rem; color: var(--accent-orange);"><i class="fa-solid fa-pen-to-square"></i> Haftalık Programa Egzersiz Ekle</h4>
-                    <div style="display: flex; gap: 10px;">
-                        <select id="manualFitDaySelect2" style="border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.05); color: white;">
-                            <option value="1">Pzt</option>
-                            <option value="2">Sal</option>
-                            <option value="3">Çar</option>
-                            <option value="4">Per</option>
-                            <option value="5">Cum</option>
-                            <option value="6">Cmt</option>
-                            <option value="0">Paz</option>
-                        </select>
-                        <input type="text" id="manualFitInput2" placeholder="Örn: Deadlift 3x5" style="flex: 1; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.05); color: white; outline: none;">
-                        <button id="manualFitAddBtn2" style="background: rgba(255,255,255,0.1); color: white; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer;"><i class="fa-solid fa-plus"></i></button>
-                    </div>
+                <div class="divider"></div>
+                
+                <!-- Manuel Ekleme -->
+                <h4 class="section-header mt-sm"><i class="fa-solid fa-pen-to-square"></i> Haftalık Programa Egzersiz Ekle</h4>
+                <div class="ai-input-wrapper mb-md">
+                    <select id="manualFitDaySelect2" class="select-field" style="flex: 0 0 70px; border: none; background: transparent;">
+                        <option value="1">Pzt</option>
+                        <option value="2">Sal</option>
+                        <option value="3">Çar</option>
+                        <option value="4">Per</option>
+                        <option value="5">Cum</option>
+                        <option value="6">Cmt</option>
+                        <option value="0">Paz</option>
+                    </select>
+                    <input type="text" id="manualFitInput2" placeholder="Örn: Deadlift 3x5">
+                    <button id="manualFitAddBtn2"><i class="fa-solid fa-plus"></i></button>
                 </div>
 
-                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-                    <h4 style="margin-bottom: 10px; font-size: 0.9rem; color: var(--text-secondary);">Sadece Bugün İçin Ekstra Bir Şey Yaptın Mı?</h4>
-                    <div class="ai-input-wrapper">
-                        <input type="text" id="fitnessAiInput" placeholder="Örn: 45 dk bisiklet sürdüm">
-                        <button id="fitnessAiBtn"><i class="fa-solid fa-plus"></i></button>
-                    </div>
+            </div>
+
+            <!-- Ekstra Aktivite (Her Zaman Görünür) -->
+            <div class="card mt-sm">
+                <h3 class="card-title"><i class="fa-solid fa-bolt color-orange"></i> Ekstra Aktivite</h3>
+                <p class="text-sm text-muted mb-md">Program dışı bir spor yaptıysan (yürüyüş, bisiklet vb.), yapay zeka kaloriyi hesaplayıp eklesin.</p>
+                <div class="ai-input-wrapper">
+                    <input type="text" id="fitnessAiInput" placeholder="Örn: 45 dk bisiklet sürdüm">
+                    <button id="fitnessAiBtn"><i class="fa-solid fa-plus"></i></button>
                 </div>
             </div>
             
-            <p style="margin-top: 15px; font-size: 0.95rem; text-align: center;">
-                Bugün Yakılan: <strong id="burnedCaloriesTotalUI" style="color: var(--accent-orange); font-size: 1.2rem;">0</strong> kcal
-            </p>
+            <div class="burned-total">
+                Bugün Yakılan: <strong id="burnedCaloriesTotalUI">0</strong> kcal
+            </div>
         </section>
         
-        <!-- View: Calendar -->
+        <!-- ═══ View: Calendar ═══ -->
         <section id="view-calendar" class="view">
             <h2><i class="fa-regular fa-calendar-days"></i> Takvim & Ajanda</h2>
             
-            <!-- Aylık Izgara Kartı -->
-            <div class="card" style="margin-bottom: 20px; padding: 15px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
-                    <button id="calPrevMonth" style="background: rgba(255,255,255,0.1); border: none; color: var(--text-primary); cursor: pointer; padding: 8px 12px; border-radius: 8px;"><i class="fa-solid fa-chevron-left"></i></button>
-                    <h3 id="calMonthDisplay" style="color: var(--accent-green); margin: 0; font-size: 1.1rem;">Haziran 2026</h3>
-                    <button id="calNextMonth" style="background: rgba(255,255,255,0.1); border: none; color: var(--text-primary); cursor: pointer; padding: 8px 12px; border-radius: 8px;"><i class="fa-solid fa-chevron-right"></i></button>
+            <!-- Aylık Izgara -->
+            <div class="card mb-lg">
+                <div class="flex-between mb-md">
+                    <button id="calPrevMonth" class="btn-icon"><i class="fa-solid fa-chevron-left"></i></button>
+                    <h3 id="calMonthDisplay" class="card-title mb-0 color-green">Haziran 2026</h3>
+                    <button id="calNextMonth" class="btn-icon"><i class="fa-solid fa-chevron-right"></i></button>
                 </div>
                 
-                <!-- Gün İsimleri -->
-                <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 10px;">
+                <!-- Gün isimleri -->
+                <div class="cal-page-grid text-xs text-muted text-center mb-sm" style="font-weight: 600;">
                     <div>Pzt</div><div>Sal</div><div>Çar</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div>
                 </div>
                 
-                <!-- Gün Numaraları (Grid) -->
-                <div id="calGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;">
+                <div id="calGrid" class="cal-page-grid">
                     <!-- JS ile doldurulacak -->
                 </div>
             </div>
 
+            <!-- Seçili Gün -->
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 id="calSelectedDateDisplay" style="color: var(--accent-blue);"><i class="fa-solid fa-list-check"></i> Seçili Gün: Bugün</h3>
+                <div class="flex-between mb-md">
+                    <h3 id="calSelectedDateDisplay" class="card-title mb-0 color-blue"><i class="fa-solid fa-list-check"></i> Seçili Gün: Bugün</h3>
                 </div>
 
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <select id="calTypeSelect" style="flex: 1; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.05); color: white;">
+                <div class="ai-input-wrapper mb-sm">
+                    <select id="calTypeSelect" class="select-field" style="flex: 0 0 auto; border: none; background: transparent; min-width: 120px;">
                         <option value="task">📝 Görev</option>
                         <option value="event">🕒 Buluşma / İş</option>
                         <option value="note">📓 Günlük Notu</option>
                     </select>
-                </div>
-                <div class="ai-input-wrapper">
                     <input type="text" id="calendarTaskInput" placeholder="Örn: 14:00 Toplantı...">
                     <button id="calendarAddBtn"><i class="fa-solid fa-plus"></i></button>
                 </div>
                 
-                <ul class="todo-list" id="calendarTaskList" style="margin-top: 20px;">
+                <ul class="todo-list" id="calendarTaskList" style="margin-top: var(--space-md);">
                     <!-- Seçili günün etkinlikleri -->
                 </ul>
             </div>
         </section>
 
-        <!-- View: History -->
+        <!-- ═══ View: History ═══ -->
         <section id="view-history" class="view">
             <h2><i class="fa-solid fa-clock-rotate-left"></i> Geçmiş Günler</h2>
-            <div id="historyContainer" style="margin-top: 15px;">
-                <!-- Arşivlenmiş günler JS ile buraya eklenecek -->
-                <p style="text-align: center; color: var(--text-secondary); margin-top: 20px;">Henüz geçmiş bir kaydınız bulunmuyor.</p>
+            <div id="historyContainer">
+                <p class="text-center text-muted mt-md">Henüz geçmiş bir kaydınız bulunmuyor.</p>
             </div>
         </section>
 
-        <!-- View: Settings -->
+        <!-- ═══ View: Settings ═══ -->
         <section id="view-settings" class="view">
             <h2><i class="fa-solid fa-gear"></i> Ayarlar</h2>
             
             <!-- Profil Ayarları -->
             <div class="card">
-                <h3 style="margin-bottom: 15px;"><i class="fa-solid fa-user"></i> Vücut Analizi & Profil</h3>
+                <h3 class="card-title"><i class="fa-solid fa-user"></i> Vücut Analizi & Profil</h3>
                 
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 5px;"><i class="fa-solid fa-user-pen"></i> İsim</label>
-                    <input type="text" id="settingsName" class="ai-input-wrapper" style="width: 100%; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 20px; background: rgba(255,255,255,0.05); color: white;" placeholder="İsminiz">
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-user-pen"></i> İsim</label>
+                    <input type="text" id="settingsName" class="input-field" placeholder="İsminiz">
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                    <div>
-                        <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 5px;"><i class="fa-solid fa-cake-candles"></i> Yaş</label>
-                        <input type="number" id="settingsAge" class="ai-input-wrapper" style="width: 100%; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 20px; background: rgba(255,255,255,0.05); color: white;" placeholder="Örn: 25">
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label"><i class="fa-solid fa-cake-candles"></i> Yaş</label>
+                        <input type="number" id="settingsAge" class="input-field" placeholder="Örn: 25">
                     </div>
-                    <div>
-                        <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 5px;"><i class="fa-solid fa-ruler-vertical"></i> Boy (cm)</label>
-                        <input type="number" id="settingsHeight" class="ai-input-wrapper" style="width: 100%; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 20px; background: rgba(255,255,255,0.05); color: white;" placeholder="Örn: 180">
+                    <div class="form-group">
+                        <label class="form-label"><i class="fa-solid fa-ruler-vertical"></i> Boy (cm)</label>
+                        <input type="number" id="settingsHeight" class="input-field" placeholder="Örn: 180">
                     </div>
                 </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 5px;"><i class="fa-solid fa-weight-scale"></i> Hedef Kilo (kg)</label>
-                    <input type="number" id="settingsTargetWeight" class="ai-input-wrapper" style="width: 100%; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 20px; background: rgba(255,255,255,0.05); color: white;" placeholder="Örn: 75.0" step="0.1">
+                
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-weight-scale"></i> Hedef Kilo (kg)</label>
+                    <input type="number" id="settingsTargetWeight" class="input-field" placeholder="Örn: 75.0" step="0.1">
                 </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 5px;"><i class="fa-solid fa-venus-mars"></i> Cinsiyet</label>
-                    <select id="settingsGender" class="ai-input-wrapper" style="width: 100%; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 20px; background: rgba(255,255,255,0.05); color: white;">
+                
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-venus-mars"></i> Cinsiyet</label>
+                    <select id="settingsGender" class="input-field">
                         <option value="male">Erkek</option>
                         <option value="female">Kadın</option>
                     </select>
                 </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 5px;"><i class="fa-solid fa-person-running"></i> Aktivite Seviyesi</label>
-                    <select id="settingsActivity" class="ai-input-wrapper" style="width: 100%; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 20px; background: rgba(255,255,255,0.05); color: white;">
+                
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-person-running"></i> Aktivite Seviyesi</label>
+                    <select id="settingsActivity" class="input-field">
                         <option value="1.2">Masa başı (Hareketsiz)</option>
                         <option value="1.375">Hafif Egzersiz (1-3 gün)</option>
                         <option value="1.55">Orta Egzersiz (3-5 gün)</option>
                         <option value="1.725">Ağır Egzersiz (6-7 gün)</option>
                     </select>
                 </div>
-                <div style="margin-bottom: 20px;">
-                    <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 5px;"><i class="fa-solid fa-bullseye"></i> Ana Hedef</label>
-                    <select id="settingsGoal" class="ai-input-wrapper" style="width: 100%; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 20px; background: rgba(255,255,255,0.05); color: white;">
+                
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-bullseye"></i> Ana Hedef</label>
+                    <select id="settingsGoal" class="input-field">
                         <option value="lose">Kilo Ver</option>
                         <option value="maintain">Kilonu Koru</option>
                         <option value="gain">Kilo Al</option>
@@ -401,38 +510,83 @@
                     </select>
                 </div>
                 
-                <h4 style="margin-top: 15px; margin-bottom: 10px; color: var(--accent-orange);"><i class="fa-solid fa-sliders"></i> Gelişmiş Hedefler</h4>
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 5px;"><i class="fa-solid fa-fire-flame-curved"></i> Günlük Kalori Sapması</label>
-                    <input type="number" id="settingsCalorieAdj" class="ai-input-wrapper" style="width: 100%; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 20px; background: rgba(255,255,255,0.05); color: white;" placeholder="Örn: -500 veya 300" step="50">
-                    <small style="color: var(--text-secondary); display: block; margin-top: 5px;">Hesaplanan günlük ihtiyaca eklenecek/çıkarılacak miktar. (Örn: -500)</small>
+                <h4 class="section-header"><i class="fa-solid fa-sliders"></i> Gelişmiş Hedefler</h4>
+                
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-fire-flame-curved"></i> Günlük Kalori Sapması</label>
+                    <input type="number" id="settingsCalorieAdj" class="input-field" placeholder="Örn: -500 veya 300" step="50">
+                    <p class="form-hint">Hesaplanan günlük ihtiyaca eklenecek/çıkarılacak miktar. (Örn: -500)</p>
                 </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 5px;"><i class="fa-solid fa-glass-water"></i> Günlük Su Hedefi (ml)</label>
-                    <input type="number" id="settingsWaterGoal" class="ai-input-wrapper" style="width: 100%; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 20px; background: rgba(255,255,255,0.05); color: white;" placeholder="Örn: 3000" step="100">
+                
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-glass-water"></i> Günlük Su Hedefi (ml)</label>
+                    <input type="number" id="settingsWaterGoal" class="input-field" placeholder="Örn: 3000" step="100">
                 </div>
 
-                <button id="saveProfileBtn" style="width: 100%; padding: 12px; border-radius: 20px; background: var(--accent-blue); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 15px;">
+                <button id="saveProfileBtn" class="btn btn-primary btn-full mt-md">
                     <i class="fa-solid fa-calculator"></i> Profili Kaydet & Kaloriyi Hesapla
+                </button>
+            </div>
+
+            <!-- Bildirim Ayarları -->
+            <div class="card" id="notifSettingsCard">
+                <h3 class="card-title"><i class="fa-solid fa-bell"></i> Bildirim Ayarları</h3>
+                
+                <div class="form-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="notifWaterReminder" checked>
+                        <span class="checkmark"></span>
+                        <span class="todo-text">💧 Su hatırlatması (2 saatte bir)</span>
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="notifGoalAlerts" checked>
+                        <span class="checkmark"></span>
+                        <span class="todo-text">🎯 Hedef bildirimleri</span>
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="notifStreakAlerts" checked>
+                        <span class="checkmark"></span>
+                        <span class="todo-text">🔥 Streak bildirimleri</span>
+                    </label>
+                </div>
+                
+                <div class="form-group mb-0">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="notifPushEnabled">
+                        <span class="checkmark"></span>
+                        <span class="todo-text">📲 Push bildirimleri (tarayıcı)</span>
+                    </label>
+                </div>
+
+                <button id="saveNotifSettingsBtn" class="btn btn-secondary btn-full mt-md">
+                    <i class="fa-solid fa-floppy-disk"></i> Bildirim Ayarlarını Kaydet
                 </button>
             </div>
 
             <!-- API Ayarları -->
             <div class="card">
-                <h3 style="margin-bottom: 8px;"><i class="fa-solid fa-robot"></i> Yapay Zeka (Gemini) Bağlantısı</h3>
-                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 16px;">Akıllı öğün girişinin çalışması için Google AI Studio'dan aldığınız API anahtarını buraya yapıştırın. Bu anahtar sadece sizin cihazınızda şifreli olarak tutulur, dışarı aktarılmaz.</p>
-                <div class="ai-input-wrapper" style="border-color: rgba(255,255,255,0.2);">
+                <h3 class="card-title"><i class="fa-solid fa-robot"></i> Yapay Zeka (Gemini) Bağlantısı</h3>
+                <p class="text-sm text-muted mb-md">Google AI Studio'dan aldığınız API anahtarını buraya yapıştırın. Bu anahtar sadece sizin cihazınızda tutulur.</p>
+                <div class="ai-input-wrapper">
                     <input type="password" id="apiKeyInput" placeholder="API Anahtarını Yapıştır (AIzaSy...)">
-                    <button id="saveApiKeyBtn" style="width: auto; padding: 0 16px; font-weight: bold;"><i class="fa-solid fa-floppy-disk"></i> Kaydet</button>
+                    <button id="saveApiKeyBtn"><i class="fa-solid fa-floppy-disk"></i> Kaydet</button>
                 </div>
-                <p id="apiKeyStatus" style="font-size: 0.85rem; margin-top: 12px; color: var(--accent-green); display: none; font-weight: 500;"><i class="fa-solid fa-circle-check"></i> Anahtar başarıyla cihaza kaydedildi!</p>
+                <p id="apiKeyStatus" class="text-sm color-green mt-sm font-bold" style="display: none;">
+                    <i class="fa-solid fa-circle-check"></i> Anahtar başarıyla cihaza kaydedildi!
+                </p>
             </div>
 
             <!-- Günü Sıfırla -->
-            <div class="card" style="border: 1px solid rgba(255, 59, 48, 0.3);">
-                <h3 style="margin-bottom: 8px; color: var(--accent-red);"><i class="fa-solid fa-triangle-exclamation"></i> Seçili Günü Sıfırla</h3>
-                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 16px;">Bulunduğunuz güne ait tüm verileri (kalori, spor, uyku, su) tamamen temizler. Bu işlem geri alınamaz!</p>
-                <button id="resetTodayBtn" style="width: 100%; padding: 12px; border-radius: 20px; background: rgba(255, 59, 48, 0.1); color: var(--accent-red); border: 1px solid rgba(255, 59, 48, 0.5); font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
+            <div class="card card-danger">
+                <h3 class="card-title color-red"><i class="fa-solid fa-triangle-exclamation"></i> Seçili Günü Sıfırla</h3>
+                <p class="text-sm text-muted mb-md">Bulunduğunuz güne ait tüm verileri (kalori, spor, uyku, su) tamamen temizler. Bu işlem geri alınamaz!</p>
+                <button id="resetTodayBtn" class="btn btn-danger btn-full">
                     <i class="fa-solid fa-trash-can"></i> Bu Günü Tamamen Sıfırla
                 </button>
             </div>
@@ -440,47 +594,49 @@
 
     </main>
 
-    <!-- Calendar Modal -->
-    <div id="calendarModal" class="modal" style="display: none; align-items: center; justify-content: center; z-index: 1000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);">
-        <div class="modal-content" style="background: rgba(15, 15, 20, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 20px; width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <button id="calPrevBtn" style="background:none; border:none; color:white; cursor:pointer; padding:5px;"><i class="fa-solid fa-chevron-left"></i></button>
-                <strong id="calMonthYear" style="font-size: 1.1rem; color: white;"></strong>
-                <button id="calNextBtn" style="background:none; border:none; color:white; cursor:pointer; padding:5px;"><i class="fa-solid fa-chevron-right"></i></button>
+    <!-- ═══ Calendar Modal ═══ -->
+    <div id="calendarModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button id="calPrevBtn" class="modal-nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                <strong id="calMonthYear" class="text-lg"></strong>
+                <button id="calNextBtn" class="modal-nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 10px; font-weight: bold;">
+            <div class="cal-grid text-sm" style="font-weight: 600; color: var(--text-tertiary); margin-bottom: var(--space-sm);">
                 <div>Pt</div><div>Sa</div><div>Ça</div><div>Pe</div><div>Cu</div><div>Ct</div><div>Pz</div>
             </div>
-            <div id="calDays" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center;">
+            <div id="calDays" class="cal-grid">
                 <!-- Days go here -->
             </div>
-            <button id="calCloseBtn" style="width:100%; margin-top:15px; padding:10px; background:rgba(255,255,255,0.1); border:none; color:white; border-radius:15px; cursor:pointer; font-family: var(--font-sans);">İptal</button>
+            <button id="calCloseBtn" class="btn btn-secondary btn-full mt-md">İptal</button>
         </div>
     </div>
 
-    <!-- Bottom Navigation -->
+    <!-- ═══ Bottom Navigation ═══ -->
     <nav class="bottom-nav">
-        <a href="#" class="nav-item active" data-target="view-dashboard">
-            <i class="fa-solid fa-house"></i>
-            <span>Özet</span>
-        </a>
-        <a href="#" class="nav-item" data-target="view-daily">
-            <i class="fa-solid fa-sun"></i>
-            <span>Günlük</span>
-        </a>
-        <a href="#" class="nav-item" data-target="view-fitness">
-            <i class="fa-solid fa-dumbbell"></i>
-            <span>Spor</span>
-        </a>
-        <a href="#" class="nav-item" data-target="view-calendar">
-            <i class="fa-regular fa-calendar-days"></i>
-            <span>Takvim</span>
-        </a>
-        <a href="#" class="nav-item" data-target="view-history">
-            <i class="fa-solid fa-clock-rotate-left"></i>
-            <span>Geçmiş</span>
-        </a>
-        <a href="#" class="nav-item" data-target="view-settings" style="display: none;"></a>
+        <div class="bottom-nav-inner">
+            <a href="#" class="nav-item active" data-target="view-dashboard">
+                <i class="fa-solid fa-house"></i>
+                <span>Özet</span>
+            </a>
+            <a href="#" class="nav-item" data-target="view-daily">
+                <i class="fa-solid fa-sun"></i>
+                <span>Günlük</span>
+            </a>
+            <a href="#" class="nav-item" data-target="view-fitness">
+                <i class="fa-solid fa-dumbbell"></i>
+                <span>Spor</span>
+            </a>
+            <a href="#" class="nav-item" data-target="view-calendar">
+                <i class="fa-regular fa-calendar-days"></i>
+                <span>Takvim</span>
+            </a>
+            <a href="#" class="nav-item" data-target="view-history">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Geçmiş</span>
+            </a>
+            <a href="#" class="nav-item" data-target="view-settings" style="display: none;"></a>
+        </div>
     </nav>
 
     <!-- Scripts -->

@@ -1,5 +1,6 @@
 import { appState, saveState, saveActiveToHistory } from '../state.js';
 import { updateUI } from '../ui.js';
+import { showToast, getNotifSettings, saveNotifSettings, requestPushPermission, startWaterReminder, stopWaterReminder } from '../notifications.js';
 
 export function initSettings() {
     const apiKeyInput = document.getElementById('apiKeyInput');
@@ -41,11 +42,13 @@ export function initSettings() {
                 localStorage.setItem('geminiApiKey', key);
                 saveApiKeyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Kaydedildi';
                 saveApiKeyBtn.style.background = 'var(--accent-green)';
-                apiKeyStatus.style.display = 'block';
+                if (apiKeyStatus) apiKeyStatus.style.display = 'block';
+                
+                showToast('🔑 API Anahtarı', 'Başarıyla kaydedildi!', 'success', 3000);
                 
                 setTimeout(() => {
                     saveApiKeyBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Kaydet';
-                    saveApiKeyBtn.style.background = 'rgba(255,255,255,0.1)';
+                    saveApiKeyBtn.style.background = '';
                 }, 2000);
             }
         });
@@ -73,42 +76,95 @@ export function initSettings() {
                 bmr = 447.593 + (9.247 * w) + (3.098 * appState.height) - (4.330 * appState.age);
             }
 
-            let tdee = bmr * appState.activityLevel; // Toplam Günlük Enerji Harcaması
-
-            // Hedefe göre özel kalori modifikasyonu (Kullanıcının girdiği açık/fazla)
+            let tdee = bmr * appState.activityLevel;
             tdee += appState.calorieAdjustment;
 
             appState.calorieGoal = Math.round(tdee);
 
             // Makro Hesaplamaları
-            if(!appState.macroGoals) appState.macroGoals = {protein: 0, carbs: 0, fat: 0};
+            if (!appState.macroGoals) appState.macroGoals = { protein: 0, carbs: 0, fat: 0 };
             
-            // Protein: Kilo başına 2.2 gram (Özellikle Recomp/Kas için ideali)
             appState.macroGoals.protein = Math.round(w * 2.2);
-            
-            // Yağ: Kilo başına 1 gram
             appState.macroGoals.fat = Math.round(w * 1.0);
             
-            // Karbonhidrat: Geriye kalan kaloriler
             const proteinCals = appState.macroGoals.protein * 4;
             const fatCals = appState.macroGoals.fat * 9;
             const remainingCals = appState.calorieGoal - (proteinCals + fatCals);
             appState.macroGoals.carbs = Math.max(0, Math.round(remainingCals / 4));
 
             saveState();
-            updateUI(); // Dashboard'daki kalori hedefini anında günceller
+            updateUI();
 
-            saveProfileBtn.innerHTML = '<i class="fa-solid fa-check"></i> Güncellendi (' + appState.calorieGoal + ' kcal)';
+            saveProfileBtn.innerHTML = `<i class="fa-solid fa-check"></i> Güncellendi (${appState.calorieGoal} kcal)`;
             saveProfileBtn.style.background = 'var(--accent-green)';
+            saveProfileBtn.style.boxShadow = 'var(--shadow-glow-green)';
+            
+            showToast('✅ Profil Güncellendi', `Günlük kalori hedefi: ${appState.calorieGoal} kcal`, 'success', 4000);
             
             setTimeout(() => {
                 saveProfileBtn.innerHTML = '<i class="fa-solid fa-calculator"></i> Profili Kaydet & Kaloriyi Hesapla';
-                saveProfileBtn.style.background = 'var(--accent-blue)';
+                saveProfileBtn.style.background = '';
+                saveProfileBtn.style.boxShadow = '';
             }, 3000);
         });
     }
 
-    // --- Reset Today ---
+    // ═══ Notification Settings ═══
+    const notifWaterReminder = document.getElementById('notifWaterReminder');
+    const notifGoalAlerts = document.getElementById('notifGoalAlerts');
+    const notifStreakAlerts = document.getElementById('notifStreakAlerts');
+    const notifPushEnabled = document.getElementById('notifPushEnabled');
+    const saveNotifSettingsBtn = document.getElementById('saveNotifSettingsBtn');
+
+    // Load notification settings
+    const notifSettings = getNotifSettings();
+    if (notifWaterReminder) notifWaterReminder.checked = notifSettings.waterReminder;
+    if (notifGoalAlerts) notifGoalAlerts.checked = notifSettings.goalNotifications;
+    if (notifStreakAlerts) notifStreakAlerts.checked = notifSettings.streakNotifications;
+    if (notifPushEnabled) notifPushEnabled.checked = notifSettings.pushEnabled;
+
+    if (saveNotifSettingsBtn) {
+        saveNotifSettingsBtn.addEventListener('click', async () => {
+            const newSettings = {
+                waterReminder: notifWaterReminder ? notifWaterReminder.checked : true,
+                waterIntervalMinutes: 120,
+                goalNotifications: notifGoalAlerts ? notifGoalAlerts.checked : true,
+                streakNotifications: notifStreakAlerts ? notifStreakAlerts.checked : true,
+                pushEnabled: notifPushEnabled ? notifPushEnabled.checked : false
+            };
+
+            saveNotifSettings(newSettings);
+
+            // Handle water reminder
+            if (newSettings.waterReminder) {
+                startWaterReminder();
+            } else {
+                stopWaterReminder();
+            }
+
+            // Handle push permission
+            if (newSettings.pushEnabled) {
+                const granted = await requestPushPermission();
+                if (!granted) {
+                    showToast('⚠️ Push Bildirim', 'Tarayıcı izni reddedildi. Lütfen tarayıcı ayarlarından izin verin.', 'warning', 5000);
+                    if (notifPushEnabled) notifPushEnabled.checked = false;
+                    newSettings.pushEnabled = false;
+                    saveNotifSettings(newSettings);
+                } else {
+                    showToast('📲 Push Aktif', 'Tarayıcı bildirimleri aktif edildi!', 'success');
+                }
+            }
+
+            showToast('🔔 Bildirim Ayarları', 'Başarıyla kaydedildi!', 'success', 3000);
+
+            saveNotifSettingsBtn.innerHTML = '<i class="fa-solid fa-check"></i> Kaydedildi';
+            setTimeout(() => {
+                saveNotifSettingsBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Bildirim Ayarlarını Kaydet';
+            }, 2000);
+        });
+    }
+
+    // ═══ Reset Today ═══
     const resetTodayBtn = document.getElementById('resetTodayBtn');
     if (resetTodayBtn) {
         resetTodayBtn.addEventListener('click', () => {
@@ -132,12 +188,11 @@ export function initSettings() {
                     });
                 }
                 
-                // Update history
                 saveActiveToHistory();
                 saveState();
                 
-                alert("Gün başarıyla sıfırlandı!");
-                window.location.reload();
+                showToast('🗑️ Gün Sıfırlandı', `${appState.lastAccessDate} için tüm veriler temizlendi.`, 'info', 4000);
+                setTimeout(() => window.location.reload(), 500);
             }
         });
     }

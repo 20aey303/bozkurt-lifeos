@@ -1,5 +1,6 @@
 import { appState, saveState } from '../state.js';
 import { updateUI } from '../ui.js';
+import { showToast } from '../notifications.js';
 
 export function initRoutine() {
     // --- 1. Water Intake ---
@@ -27,8 +28,14 @@ export function initRoutine() {
                 appState.waterIntake += amount;
                 saveState();
                 updateWaterUI();
+                updateUI();
                 waterInput.value = '';
+                showToast('💧 Su Eklendi', `+${amount}L — Toplam: ${appState.waterIntake.toFixed(1)}L`, 'success', 2000);
             }
+        });
+
+        waterInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') saveWaterBtn.click();
         });
     }
 
@@ -37,6 +44,8 @@ export function initRoutine() {
             appState.waterIntake = 0;
             saveState();
             updateWaterUI();
+            updateUI();
+            showToast('💧 Su Sıfırlandı', 'Su tüketimi sıfırlandı.', 'info', 2000);
         });
     }
 
@@ -52,9 +61,9 @@ export function initRoutine() {
                 
                 // Add to history for chart
                 const today = appState.lastAccessDate || new Date().toLocaleDateString('tr-TR');
-                if(!appState.weightHistory) appState.weightHistory = [];
+                if (!appState.weightHistory) appState.weightHistory = [];
                 const lastEntry = appState.weightHistory[appState.weightHistory.length - 1];
-                if(lastEntry && lastEntry.date === today) {
+                if (lastEntry && lastEntry.date === today) {
                     lastEntry.weight = w;
                 } else {
                     appState.weightHistory.push({ date: today, weight: w });
@@ -65,14 +74,19 @@ export function initRoutine() {
                 
                 saveWeightBtn.innerHTML = '<i class="fa-solid fa-check"></i> Kaydedildi';
                 saveWeightBtn.style.background = 'var(--accent-green)';
+                showToast('⚖️ Kilo Kaydedildi', `${w} kg olarak güncellendi.`, 'success', 3000);
+                
                 setTimeout(() => {
                     saveWeightBtn.innerHTML = '<i class="fa-solid fa-check"></i> Kaydet';
                     saveWeightBtn.style.background = '';
                     morningWeightInput.value = '';
-                    // Reload window to update chart
                     window.location.reload();
                 }, 1000);
             }
+        });
+
+        morningWeightInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') saveWeightBtn.click();
         });
     }
 
@@ -88,11 +102,8 @@ export function initRoutine() {
     }
 
     if (routineSleepBtn && routineSleepInput) {
-        
         routineSleepInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                routineSleepBtn.click();
-            }
+            if (e.key === 'Enter') routineSleepBtn.click();
         });
 
         routineSleepBtn.addEventListener('click', () => {
@@ -101,13 +112,15 @@ export function initRoutine() {
                 appState.sleepHours = hours;
                 saveState();
                 updateSleepUI();
+                updateUI();
                 
                 routineSleepBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
                 routineSleepBtn.style.background = 'var(--accent-green)';
+                showToast('😴 Uyku Kaydedildi', `${hours} saat olarak güncellendi.`, 'success', 2000);
                 
                 setTimeout(() => {
                     routineSleepBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Ekle';
-                    routineSleepBtn.style.background = 'var(--accent-blue)';
+                    routineSleepBtn.style.background = '';
                     routineSleepInput.value = '';
                 }, 1500);
             }
@@ -120,29 +133,30 @@ export function initRoutine() {
     const addVitaminBtn = document.getElementById('addVitaminBtn');
 
     function renderVitamins() {
-        if(!vitaminList) return;
+        if (!vitaminList) return;
         vitaminList.innerHTML = '';
-        if(!appState.customVitamins) appState.customVitamins = [];
+        if (!appState.customVitamins) appState.customVitamins = [];
         
         appState.customVitamins.forEach((vit, index) => {
             const li = document.createElement('li');
+            li.className = 'workout-item';
             li.innerHTML = `
-                <label class="checkbox-container">
+                <label class="checkbox-container" style="flex: 1; margin-bottom: 0;">
                     <input type="checkbox" id="${vit.id}" ${vit.checked ? 'checked' : ''}>
                     <span class="checkmark"></span>
                     <span class="todo-text">${vit.name}</span>
                 </label>
-                <button class="delete-btn" style="background: none; border: none; color: var(--accent-red); cursor: pointer; padding: 5px;"><i class="fa-solid fa-trash"></i></button>
+                <button class="btn-icon danger delete-btn"><i class="fa-solid fa-trash"></i></button>
             `;
-            li.style.display = 'flex';
-            li.style.justifyContent = 'space-between';
-            li.style.alignItems = 'center';
             vitaminList.appendChild(li);
 
             // Checkbox event
             li.querySelector('input').addEventListener('change', (e) => {
                 appState.customVitamins[index].checked = e.target.checked;
                 saveState();
+                if (e.target.checked) {
+                    showToast('💊 Vitamin Alındı', vit.name, 'success', 2000);
+                }
             });
 
             // Delete event
@@ -150,15 +164,16 @@ export function initRoutine() {
                 appState.customVitamins.splice(index, 1);
                 saveState();
                 renderVitamins();
+                showToast('🗑️ Vitamin Silindi', vit.name, 'info', 2000);
             });
         });
     }
 
-    if(addVitaminBtn && newVitaminInput) {
+    if (addVitaminBtn && newVitaminInput) {
         addVitaminBtn.addEventListener('click', () => {
             const name = newVitaminInput.value.trim();
-            if(name) {
-                if(!appState.customVitamins) appState.customVitamins = [];
+            if (name) {
+                if (!appState.customVitamins) appState.customVitamins = [];
                 appState.customVitamins.push({
                     id: 'vit_' + Date.now(),
                     name: name,
@@ -167,7 +182,12 @@ export function initRoutine() {
                 saveState();
                 renderVitamins();
                 newVitaminInput.value = '';
+                showToast('💊 Vitamin Eklendi', name, 'success', 2000);
             }
+        });
+
+        newVitaminInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addVitaminBtn.click();
         });
     }
 
@@ -176,7 +196,7 @@ export function initRoutine() {
     updateSleepUI();
     renderVitamins();
 
-    // Re-render when state updates (e.g. settings saved)
+    // Re-render when state updates
     window.addEventListener('stateUpdated', () => {
         updateWaterUI();
     });
