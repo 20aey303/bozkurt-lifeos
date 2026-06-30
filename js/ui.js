@@ -157,13 +157,13 @@ export function initNavigation() {
                     dayBtn.onmouseout = () => dayBtn.style.background = 'transparent';
                 }
                 
-                dayBtn.onclick = () => {
+                dayBtn.onclick = async () => {
                     document.getElementById('calendarModal').style.display = 'none';
                     const dd = String(i).padStart(2, '0');
                     const mm = String(month + 1).padStart(2, '0');
                     const yyyy = year;
-                    switchDate(`${dd}.${mm}.${yyyy}`);
-                    location.reload();
+                    await switchDate(`${dd}.${mm}.${yyyy}`);
+                    setTimeout(() => location.reload(), 100);
                 };
                 
                 calDays.appendChild(dayBtn);

@@ -64,9 +64,10 @@ export function saveState() {
     
     try {
         const docRef = doc(db, "users", "my_life_os");
-        setDoc(docRef, appState).catch(e => console.error("Firebase yazma hatası:", e));
+        return setDoc(docRef, appState).catch(e => console.error("Firebase yazma hatası:", e));
     } catch (e) {
         console.error("Firebase senkronizasyon hatası:", e);
+        return Promise.resolve();
     }
 }
 
@@ -90,8 +91,7 @@ export function endDay() {
     }
 
     // switchDate already calls saveActiveToHistory() and sets up the new date
-    switchDate(nextDateStr);
-    console.log("Kullanıcı günü manuel olarak bitirdi. Yeni güne geçildi.");
+    return switchDate(nextDateStr);
 }
 
 export function saveActiveToHistory() {
@@ -121,7 +121,7 @@ export function saveActiveToHistory() {
     }
 }
 
-export function switchDate(newDateStr) {
+export async function switchDate(newDateStr) {
     // 1. Önce şu anki aktif veriyi kendi tarihine (lastAccessDate) kaydet
     saveActiveToHistory();
 
@@ -140,10 +140,15 @@ export function switchDate(newDateStr) {
         appState.consumedProtein = existing.macros?.protein || 0;
         appState.consumedCarbs = existing.macros?.carbs || 0;
         appState.consumedFat = existing.macros?.fat || 0;
-        appState.meals = [...(existing.meals || [])];
-        if (existing.vitamins && appState.customVitamins) {
+        appState.meals = existing.meals ? [...existing.meals] : [];
+        
+        if (existing.vitamins) {
             appState.customVitamins = existing.vitamins.map(v => ({...v}));
+        } else {
+            appState.customVitamins.forEach(v => v.checked = false);
         }
+
+        return saveState();
     } else {
         // Yoksa sıfırla
         appState.waterIntake = 0;
@@ -154,12 +159,20 @@ export function switchDate(newDateStr) {
         appState.consumedCarbs = 0;
         appState.consumedFat = 0;
         appState.meals = [];
-        if(appState.customVitamins) {
+        if (appState.customVitamins) {
             appState.customVitamins.forEach(v => v.checked = false);
         }
+
+        // Fitness checkboxlarını da sıfırla
+        if (appState.fitnessProgram) {
+            Object.keys(appState.fitnessProgram).forEach(dayKey => {
+                appState.fitnessProgram[dayKey].forEach(task => task.done = false);
+            });
+        }
+        
+        return saveState();
     }
 
-    saveState();
     console.log("Tarih değiştirildi:", newDateStr);
 
     // Uyarı göster (Eğer geçmiş bir tarih seçildiyse)

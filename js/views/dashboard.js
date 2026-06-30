@@ -8,11 +8,11 @@ export function initDashboard() {
     const endDayBtn = document.getElementById('endDayBtn');
 
     if (endDayBtn) {
-        endDayBtn.addEventListener('click', () => {
+        endDayBtn.addEventListener('click', async () => {
             if (confirm("Günü bitirip tüm verileri arşive kaldırmak istediğinize emin misiniz?")) {
-                endDay();
+                await endDay();
                 alert("Gün başarıyla sonlandırıldı. Yeni bir güne geçildi!");
-                location.reload();
+                setTimeout(() => location.reload(), 100);
             }
         });
     }
