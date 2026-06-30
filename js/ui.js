@@ -3,8 +3,13 @@ import { appState, switchDate } from './state.js';
 export function updateUI() {
     const currentWeightUI = document.getElementById('currentWeightUI');
     const targetWeightUI = document.getElementById('targetWeightUI');
-    const consumedCaloriesUI = document.getElementById('consumedCaloriesUI');
-    const remainingCaloriesUI = document.getElementById('remainingCaloriesUI');
+    const consumedCaloriesBigUI = document.getElementById('consumedCaloriesBigUI');
+    const targetCaloriesBigUI = document.getElementById('targetCaloriesBigUI');
+    const remainingCaloriesBigUI = document.getElementById('remainingCaloriesBigUI');
+    const burnedCaloriesBigUI = document.getElementById('burnedCaloriesBigUI');
+    const calorieDeficitUI = document.getElementById('calorieDeficitUI');
+    const calorieProgressBar = document.getElementById('calorieProgressBar');
+    
     const greetingText = document.getElementById('greetingText');
 
     if(greetingText) greetingText.textContent = `Günaydın, ${appState.name || 'Kullanıcı'}`;
@@ -13,11 +18,34 @@ export function updateUI() {
     if(targetWeightUI) targetWeightUI.textContent = appState.targetWeight || 75;
     
     // Net Calories = Consumed - Burned
-    const netCalories = appState.consumedCalories - (appState.burnedCalories || 0);
+    const burned = appState.burnedCalories || 0;
+    const netCalories = appState.consumedCalories - burned;
     const remaining = Math.max(0, appState.calorieGoal - netCalories);
+    const deficit = appState.calorieGoal - netCalories;
     
-    if(consumedCaloriesUI) consumedCaloriesUI.textContent = `${appState.consumedCalories} kcal`;
-    if(remainingCaloriesUI) remainingCaloriesUI.textContent = remaining;
+    if(consumedCaloriesBigUI) consumedCaloriesBigUI.textContent = appState.consumedCalories;
+    if(targetCaloriesBigUI) targetCaloriesBigUI.textContent = appState.calorieGoal;
+    if(remainingCaloriesBigUI) remainingCaloriesBigUI.textContent = `${remaining} kcal`;
+    if(burnedCaloriesBigUI) burnedCaloriesBigUI.textContent = `${burned} kcal`;
+    if(calorieDeficitUI) {
+        if(deficit >= 0) {
+            calorieDeficitUI.textContent = `${deficit} kcal (Açık)`;
+            calorieDeficitUI.style.color = 'var(--accent-green)';
+        } else {
+            calorieDeficitUI.textContent = `${Math.abs(deficit)} kcal (Fazla)`;
+            calorieDeficitUI.style.color = 'var(--accent-red)';
+        }
+    }
+    
+    if(calorieProgressBar) {
+        const percent = Math.min(100, (appState.consumedCalories / Math.max(1, appState.calorieGoal)) * 100);
+        calorieProgressBar.style.width = `${percent}%`;
+        if(percent > 100) {
+            calorieProgressBar.style.background = 'var(--accent-red)';
+        } else {
+            calorieProgressBar.style.background = 'linear-gradient(90deg, #ff8a00, #e52e71)';
+        }
+    }
 
     // Macros
     if (appState.macroGoals) {

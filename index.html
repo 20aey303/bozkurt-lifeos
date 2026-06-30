@@ -52,52 +52,76 @@
         <!-- View: Dashboard -->
         <section id="view-dashboard" class="view active">
             
-            <!-- Summary Cards -->
-            <div class="card-grid">
-                <div class="card stat-card glow-blue">
-                    <div class="stat-icon"><i class="fa-solid fa-weight-scale"></i></div>
-                    <div class="stat-info">
-                        <h3 id="currentWeightUI">99.5 kg</h3>
-                        <p>Hedef: <span id="targetWeightUI">85.0</span> kg</p>
-                    </div>
-                </div>
-                <div class="card stat-card glow-orange">
-                    <div class="stat-icon"><i class="fa-solid fa-fire"></i></div>
-                    <div class="stat-info">
-                        <h3 id="consumedCaloriesUI">0 kcal</h3>
-                        <p>Kalan: <span id="remainingCaloriesUI">2000</span> kcal</p>
-                    </div>
-                </div>
-
-            <!-- Makro Takibi -->
-            <div class="card stat-card" style="padding: 15px; margin-top: 15px;">
-                <h3 style="font-size: 1.1rem; margin-bottom: 15px; font-family: var(--font-sans); color: var(--text-secondary);"><i class="fa-solid fa-chart-pie"></i> Makro Hedefleri</h3>
+            <!-- Big Calorie Card -->
+            <div class="card glow-orange" style="margin-bottom: 20px; padding: 25px; text-align: center; position: relative; overflow: hidden;">
+                <h3 style="color: var(--accent-orange); margin-bottom: 15px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i class="fa-solid fa-fire"></i> Kalori Durumu
+                </h3>
                 
-                <div style="margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px;">
-                        <span>Protein</span>
-                        <span><strong id="uiProtein">0</strong> / <span id="uiProteinGoal">150</span>g</span>
-                    </div>
-                    <div class="progress-container"><div id="barProtein" class="progress-bar" style="width: 0%; background: #FF5722;"></div></div>
+                <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 5px; font-family: var(--font-sans);">
+                    <span id="consumedCaloriesBigUI">0</span> <span style="font-size: 1.2rem; color: var(--text-secondary); font-weight: 600;">/ <span id="targetCaloriesBigUI">2000</span> kcal</span>
                 </div>
-
-                <div style="margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px;">
-                        <span>Karbonhidrat</span>
-                        <span><strong id="uiCarbs">0</strong> / <span id="uiCarbsGoal">200</span>g</span>
-                    </div>
-                    <div class="progress-container"><div id="barCarbs" class="progress-bar" style="width: 0%; background: #4CAF50;"></div></div>
+                
+                <div class="progress-container" style="height: 14px; margin: 20px 0; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden;">
+                    <div id="calorieProgressBar" class="progress-bar" style="width: 0%; background: linear-gradient(90deg, #ff8a00, #e52e71); border-radius: 10px; transition: 0.5s ease;"></div>
                 </div>
-
-                <div style="margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px;">
-                        <span>Yağ</span>
-                        <span><strong id="uiFat">0</strong> / <span id="uiFatGoal">60</span>g</span>
+                
+                <div style="display: flex; justify-content: space-between; text-align: center; font-size: 0.95rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 10px;">
+                    <div style="flex: 1; border-right: 1px solid rgba(255,255,255,0.1);">
+                        <div style="color: var(--text-secondary); margin-bottom: 5px;">Kalan Hak</div>
+                        <strong id="remainingCaloriesBigUI" style="font-size: 1.2rem; color: white;">2000</strong>
                     </div>
-                    <div class="progress-container"><div id="barFat" class="progress-bar" style="width: 0%; background: #FFC107;"></div></div>
+                    <div style="flex: 1; border-right: 1px solid rgba(255,255,255,0.1);">
+                        <div style="color: var(--text-secondary); margin-bottom: 5px;">Sporla Yakılan</div>
+                        <strong id="burnedCaloriesBigUI" style="font-size: 1.2rem; color: var(--accent-green);">0</strong>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="color: var(--text-secondary); margin-bottom: 5px;">Kalori Açığı</div>
+                        <strong id="calorieDeficitUI" style="font-size: 1.2rem; color: var(--accent-blue);">0</strong>
+                    </div>
                 </div>
             </div>
+
+            <!-- Summary Cards -->
+            <div class="card-grid">
+                <!-- Weight Card -->
+                <div class="card stat-card glow-blue" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                    <div class="stat-icon" style="margin-bottom: 10px;"><i class="fa-solid fa-weight-scale"></i></div>
+                    <div class="stat-info">
+                        <h3 id="currentWeightUI" style="font-size: 1.6rem; margin-bottom: 5px;">99.5 kg</h3>
+                        <p style="color: var(--text-secondary);">Hedef: <strong id="targetWeightUI" style="color: white;">85.0</strong> kg</p>
+                    </div>
                 </div>
+
+                <!-- Makro Takibi -->
+                <div class="card stat-card" style="padding: 15px; display: flex; flex-direction: column; justify-content: center;">
+                    <h3 style="font-size: 1rem; margin-bottom: 15px; font-family: var(--font-sans); color: var(--text-secondary); text-align: center;"><i class="fa-solid fa-chart-pie"></i> Makrolar</h3>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px;">
+                            <span>Pro</span>
+                            <span><strong id="uiProtein">0</strong> / <span id="uiProteinGoal">150</span>g</span>
+                        </div>
+                        <div class="progress-container" style="height: 6px;"><div id="barProtein" class="progress-bar" style="width: 0%; background: #FF5722;"></div></div>
+                    </div>
+
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px;">
+                            <span>Karb</span>
+                            <span><strong id="uiCarbs">0</strong> / <span id="uiCarbsGoal">200</span>g</span>
+                        </div>
+                        <div class="progress-container" style="height: 6px;"><div id="barCarbs" class="progress-bar" style="width: 0%; background: #4CAF50;"></div></div>
+                    </div>
+
+                    <div style="margin-bottom: 0;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px;">
+                            <span>Yağ</span>
+                            <span><strong id="uiFat">0</strong> / <span id="uiFatGoal">60</span>g</span>
+                        </div>
+                        <div class="progress-container" style="height: 6px;"><div id="barFat" class="progress-bar" style="width: 0%; background: #FFC107;"></div></div>
+                    </div>
+                </div>
+            </div>
             </div>
 
             <!-- Chart Card -->
