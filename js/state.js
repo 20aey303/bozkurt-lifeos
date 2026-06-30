@@ -45,8 +45,19 @@ export async function loadState() {
         const docRef = doc(db, "users", "my_life_os");
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            appState = { ...appState, ...docSnap.data() };
-            localStorage.setItem('lifeOsState', JSON.stringify(appState));
+            const firebaseData = docSnap.data();
+            // Yalnızca Firebase'deki veri localStorage'dan daha yeniyse (veya eşitse) al.
+            // Aksi takdirde, cihazdaki güncel veriyi (örneğin sayfa yenilenmesinden dolayı Firebase'e gidememiş olanı) koru ve Firebase'e tekrar yolla.
+            const localTime = appState.lastModified || 0;
+            const fbTime = firebaseData.lastModified || 0;
+            
+            if (fbTime >= localTime) {
+                appState = { ...appState, ...firebaseData };
+                localStorage.setItem('lifeOsState', JSON.stringify(appState));
+            } else {
+                // Local is newer, push to Firebase to fix the out-of-sync
+                setDoc(docRef, appState).catch(e => console.error("Firebase senkronizasyon düzeltme hatası:", e));
+            }
         }
     } catch(e) {
         console.error("Firebase yükleme hatası:", e);
@@ -59,6 +70,7 @@ export async function loadState() {
 }
 
 export function saveState() {
+    appState.lastModified = Date.now();
     localStorage.setItem('lifeOsState', JSON.stringify(appState));
     window.dispatchEvent(new Event('stateUpdated'));
     
