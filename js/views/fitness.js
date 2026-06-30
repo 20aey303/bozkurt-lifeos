@@ -161,7 +161,6 @@ export function initFitness() {
                 });
             }
         }
-        recalcCalories();
     }
 
     // 1. AI Program Oluşturma (Setup)

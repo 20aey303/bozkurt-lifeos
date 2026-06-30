@@ -1,4 +1,4 @@
-import { appState, saveState } from '../state.js';
+import { appState, saveState, saveActiveToHistory } from '../state.js';
 import { updateUI } from '../ui.js';
 
 export function initSettings() {
@@ -105,6 +105,41 @@ export function initSettings() {
                 saveProfileBtn.innerHTML = '<i class="fa-solid fa-calculator"></i> Profili Kaydet & Kaloriyi Hesapla';
                 saveProfileBtn.style.background = 'var(--accent-blue)';
             }, 3000);
+        });
+        });
+    }
+
+    // --- Reset Today ---
+    const resetTodayBtn = document.getElementById('resetTodayBtn');
+    if (resetTodayBtn) {
+        resetTodayBtn.addEventListener('click', () => {
+            if (confirm(`Şu an bulunduğunuz gün (${appState.lastAccessDate || 'Bugün'}) için tüm veriler silinecek. Emin misiniz?`)) {
+                appState.consumedCalories = 0;
+                appState.burnedCalories = 0;
+                appState.consumedProtein = 0;
+                appState.consumedCarbs = 0;
+                appState.consumedFat = 0;
+                appState.waterIntake = 0;
+                appState.sleepHours = 0;
+                appState.meals = [];
+                
+                if (appState.customVitamins) {
+                    appState.customVitamins.forEach(v => v.checked = false);
+                }
+                
+                if (appState.fitnessProgram) {
+                    Object.keys(appState.fitnessProgram).forEach(dayKey => {
+                        appState.fitnessProgram[dayKey].forEach(task => task.done = false);
+                    });
+                }
+                
+                // Update history
+                saveActiveToHistory();
+                saveState();
+                
+                alert("Gün başarıyla sıfırlandı!");
+                window.location.reload();
+            }
         });
     }
 }

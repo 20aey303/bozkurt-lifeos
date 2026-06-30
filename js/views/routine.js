@@ -51,7 +51,7 @@ export function initRoutine() {
                 appState.weight = w;
                 
                 // Add to history for chart
-                const today = new Date().toLocaleDateString('tr-TR');
+                const today = appState.lastAccessDate || new Date().toLocaleDateString('tr-TR');
                 if(!appState.weightHistory) appState.weightHistory = [];
                 const lastEntry = appState.weightHistory[appState.weightHistory.length - 1];
                 if(lastEntry && lastEntry.date === today) {
