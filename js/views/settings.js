@@ -106,7 +106,6 @@ export function initSettings() {
                 saveProfileBtn.style.background = 'var(--accent-blue)';
             }, 3000);
         });
-        });
     }
 
     // --- Reset Today ---
