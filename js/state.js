@@ -132,7 +132,6 @@ export async function switchDate(newDateStr) {
     const existing = appState.history.find(h => h.date === newDateStr);
 
     if (existing) {
-        appState.weight = existing.weight || appState.weight;
         appState.waterIntake = existing.waterIntake || 0;
         appState.sleepHours = existing.sleepHours || 0;
         appState.consumedCalories = existing.consumedCalories || 0;
@@ -145,7 +144,15 @@ export async function switchDate(newDateStr) {
         if (existing.vitamins) {
             appState.customVitamins = existing.vitamins.map(v => ({...v}));
         } else {
-            appState.customVitamins.forEach(v => v.checked = false);
+            if(appState.customVitamins) appState.customVitamins.forEach(v => v.checked = false);
+        }
+
+        // Daima geçmişe veya yeni güne giderken o günün tiklerini tazelemek için checkboxları sıfırlıyoruz.
+        // Burned calories zaten history'den geldiği için kalori kaybolmuyor, sadece arayüzde o gün spora sıfırdan başlanmış gibi oluyor.
+        if (appState.fitnessProgram) {
+            Object.keys(appState.fitnessProgram).forEach(dayKey => {
+                appState.fitnessProgram[dayKey].forEach(task => task.done = false);
+            });
         }
 
         return saveState();
