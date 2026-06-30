@@ -49,21 +49,38 @@ export function initHistory() {
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
                         <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center;">
                             <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Alınan Kalori</p>
-                            <strong style="color: var(--accent-orange); font-size: 1.2rem;">${day.consumedCalories} kcal</strong>
+                            <strong style="color: var(--accent-orange); font-size: 1.2rem;">${day.consumedCalories || 0} kcal</strong>
                         </div>
                         <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center;">
-                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Su (Litre)</p>
-                            <strong style="color: var(--accent-blue); font-size: 1.2rem;">${day.waterIntake} L</strong>
+                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Yakılan Kalori</p>
+                            <strong style="color: var(--accent-green); font-size: 1.2rem;">${day.burnedCalories || 0} kcal</strong>
                         </div>
                     </div>
                     
-                    <h4 style="margin-bottom: 5px; font-size: 0.95rem; color: var(--text-secondary);">O Günkü Kilo</h4>
-                    <p style="font-size: 1.1rem; margin-bottom: 15px;"><strong>${day.weight} kg</strong></p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center;">
+                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Su (Litre)</p>
+                            <strong style="color: var(--accent-blue); font-size: 1.2rem;">${day.waterIntake || 0} L</strong>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center;">
+                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">O Günkü Kilo</p>
+                            <strong style="color: white; font-size: 1.2rem;">${day.weight || '-'} kg</strong>
+                        </div>
+                    </div>
 
-                    <h4 style="margin-bottom: 5px; font-size: 0.95rem; color: var(--text-secondary);">Yenilen Öğünler</h4>
+                    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="margin-bottom: 10px; font-size: 0.95rem; color: var(--text-secondary); text-align: center;"><i class="fa-solid fa-chart-pie"></i> Makrolar</h4>
+                        <div style="display: flex; justify-content: space-around; font-size: 0.9rem;">
+                            <div style="text-align: center;"><span style="color: #FF5722;">Pro:</span> <strong>${day.macros?.protein || 0}g</strong></div>
+                            <div style="text-align: center;"><span style="color: #4CAF50;">Karb:</span> <strong>${day.macros?.carbs || 0}g</strong></div>
+                            <div style="text-align: center;"><span style="color: #FFC107;">Yağ:</span> <strong>${day.macros?.fat || 0}g</strong></div>
+                        </div>
+                    </div>
+
+                    <h4 style="margin-bottom: 5px; font-size: 0.95rem; color: var(--text-secondary);"><i class="fa-solid fa-utensils"></i> Yenilen Öğünler</h4>
                     ${mealsHTML}
                     
-                    <h4 style="margin-bottom: 5px; margin-top: 15px; font-size: 0.95rem; color: var(--text-secondary);">Alınan Vitaminler</h4>
+                    <h4 style="margin-bottom: 5px; margin-top: 15px; font-size: 0.95rem; color: var(--text-secondary);"><i class="fa-solid fa-pills"></i> Alınan Vitaminler</h4>
                     ${vitHTML}
                 </div>
             `;

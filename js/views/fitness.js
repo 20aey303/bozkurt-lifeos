@@ -27,9 +27,20 @@ export function initFitness() {
 
     const dayNames = { "1": "Pazartesi", "2": "Salı", "3": "Çarşamba", "4": "Perşembe", "5": "Cuma", "6": "Cumartesi", "0": "Pazar" };
 
+    function getTodayDayStr() {
+        if (appState.lastAccessDate) {
+            const parts = appState.lastAccessDate.split('.');
+            if(parts.length === 3) {
+                const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                return d.getDay().toString();
+            }
+        }
+        return new Date().getDay().toString();
+    }
+
     function recalcCalories() {
         let total = 0;
-        const todayDay = new Date().getDay().toString();
+        const todayDay = getTodayDayStr();
         const todayProgram = appState.fitnessProgram[todayDay] || appState.fitnessProgram[dayNames[todayDay]];
         
         if (todayProgram) {
@@ -65,7 +76,7 @@ export function initFitness() {
         if (fitnessSetupCard) fitnessSetupCard.style.display = 'none';
         if (fitnessRoutineCard) fitnessRoutineCard.style.display = 'block';
 
-        const todayDay = new Date().getDay().toString(); // 0-6
+        const todayDay = getTodayDayStr();
         const todayProgram = appState.fitnessProgram[todayDay] || appState.fitnessProgram[dayNames[todayDay]];
 
         if (!todayProgram) {
@@ -122,6 +133,7 @@ export function initFitness() {
                     btn.addEventListener('click', (e) => {
                         const idx = e.currentTarget.getAttribute('data-index');
                         if (confirm("Bu egzersizi silmek istediğine emin misin?")) {
+                            const todayDay = getTodayDayStr();
                             let deletedItem = null;
                             if(appState.fitnessProgram[todayDay]) {
                                 deletedItem = appState.fitnessProgram[todayDay].splice(idx, 1)[0];
@@ -131,7 +143,7 @@ export function initFitness() {
 
                             // Eğer bu bir 'Ekstra' hareketiyse ve takvime işlendiyse takvimden de sil
                             if (deletedItem && deletedItem.name.startsWith("Ekstra:")) {
-                                const dateKey = new Date().toLocaleDateString('tr-TR');
+                                const dateKey = appState.lastAccessDate || new Date().toLocaleDateString('tr-TR');
                                 if (appState.calendar && appState.calendar[dateKey]) {
                                     // "Ekstra: Hareket Adı (100 kcal)" formatından "Hareket Adı" kısmını çıkar
                                     const baseName = deletedItem.name.replace("Ekstra: ", "").replace(/\s*\(\d+\s*kcal\)$/i, "").trim();
@@ -250,7 +262,7 @@ export function initFitness() {
 
                 if(burnedVal) {
                     // Ekstra hareketi bugünün listesine ekle
-                    const todayDay = new Date().getDay().toString();
+                    const todayDay = getTodayDayStr();
                     if (!appState.fitnessProgram) appState.fitnessProgram = {};
                     
                     // Gün listesini bul veya oluştur
@@ -266,7 +278,7 @@ export function initFitness() {
                     });
 
                     // TAKVİME ENTEGRE ET!
-                    const dateKey = new Date().toLocaleDateString('tr-TR');
+                    const dateKey = appState.lastAccessDate || new Date().toLocaleDateString('tr-TR');
                     if (!appState.calendar) appState.calendar = {};
                     if (!appState.calendar[dateKey]) appState.calendar[dateKey] = [];
                     
